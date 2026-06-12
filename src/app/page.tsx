@@ -1,9 +1,5 @@
-import VideoTrimmer from "@/components/video-trimmer";
+import { redirect } from "next/navigation";
 
 export default function RootPage() {
-  return (
-    <main className="min-h-full bg-background py-12">
-      <VideoTrimmer />
-    </main>
-  );
+  redirect("/home");
 }
