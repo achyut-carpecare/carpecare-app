@@ -117,6 +117,24 @@
   --sidebar-ring: oklch(0.556 0 0);
 }
 
+@layer utilities {
+  .layout-full {
+    display: grid;
+    grid-template-columns: 1fr minmax(0, 100%) 1fr;
+  }
+  .layout-wide {
+    display: grid;
+    grid-template-columns: 1fr minmax(0, 140ch) 1fr;
+  }
+  .layout-content {
+    display: grid;
+    grid-template-columns: 1fr minmax(0, 100ch) 1fr;
+  }
+  .layout-center {
+    grid-column: 2;
+  }
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
