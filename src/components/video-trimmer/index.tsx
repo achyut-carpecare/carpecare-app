@@ -320,7 +320,6 @@ import { useVideoTrimmer } from "./lib/use-video-trimmer";
 
 export default function VideoTrimmer() {
   const {
-    videoFile,
     videoUrl,
     duration,
     currentTime,
@@ -331,6 +330,9 @@ export default function VideoTrimmer() {
     status,
     trimmedUrl,
     error,
+    videoRef,
+    timelineRef,
+    fileInputRef,
     handleFileSelect,
     togglePlay,
     handleTimelineClick,
@@ -352,6 +354,9 @@ export default function VideoTrimmer() {
       status={status}
       trimmedUrl={trimmedUrl}
       error={error}
+      videoRef={videoRef}
+      timelineRef={timelineRef}
+      fileInputRef={fileInputRef}
       onFileSelect={handleFileSelect}
       onTogglePlay={togglePlay}
       onTimelineClick={handleTimelineClick}

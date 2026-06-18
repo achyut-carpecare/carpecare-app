@@ -26,6 +26,9 @@ export interface UseVideoTrimmerReturn {
   status: TrimmerStatus;
   trimmedUrl: string;
   error: string;
+  videoRef: React.RefObject<HTMLVideoElement | null>;
+  timelineRef: React.RefObject<HTMLDivElement | null>;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
   handleFileSelect: (file: File) => Promise<void>;
   togglePlay: () => void;
   seekTo: (time: number) => void;
@@ -314,6 +317,9 @@ export function useVideoTrimmer(): UseVideoTrimmerReturn {
     status,
     trimmedUrl,
     error,
+    videoRef,
+    timelineRef,
+    fileInputRef,
     handleFileSelect,
     togglePlay,
     seekTo,
