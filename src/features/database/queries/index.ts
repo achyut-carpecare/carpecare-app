@@ -1,4 +1,5 @@
 export * from "./care-home";
+export * from "./care-home-members";
 export * from "./files";
 export * from "./patients";
 export * from "./seizure-record-shares";

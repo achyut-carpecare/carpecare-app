@@ -6,6 +6,7 @@ import {
   userProfiles,
   files,
   seizureRecordShares,
+  careHomeMembers,
 } from "./schema";
 
 export const patientsRelations = relations(patients, ({ one, many }) => ({
@@ -18,6 +19,7 @@ export const patientsRelations = relations(patients, ({ one, many }) => ({
 
 export const careHomeRelations = relations(careHome, ({ many }) => ({
   patients: many(patients),
+  careHomeMembers: many(careHomeMembers),
 }));
 
 export const seizureRecordsRelations = relations(
@@ -42,6 +44,7 @@ export const seizureRecordsRelations = relations(
 export const userProfilesRelations = relations(userProfiles, ({ many }) => ({
   seizureRecords: many(seizureRecords),
   seizureRecordShares: many(seizureRecordShares),
+  careHomeMembers: many(careHomeMembers),
 }));
 
 export const filesRelations = relations(files, ({ many }) => ({
@@ -57,6 +60,20 @@ export const seizureRecordSharesRelations = relations(
     }),
     userProfile: one(userProfiles, {
       fields: [seizureRecordShares.sharedBy],
+      references: [userProfiles.id],
+    }),
+  }),
+);
+
+export const careHomeMembersRelations = relations(
+  careHomeMembers,
+  ({ one }) => ({
+    careHome: one(careHome, {
+      fields: [careHomeMembers.careHomeId],
+      references: [careHome.id],
+    }),
+    userProfile: one(userProfiles, {
+      fields: [careHomeMembers.userId],
       references: [userProfiles.id],
     }),
   }),

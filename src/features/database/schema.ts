@@ -9,17 +9,21 @@ import {
   foreignKey,
   date,
   text,
+  unique,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 export const gooseDbVersion = pgTable("goose_db_version", {
-  id: integer().primaryKey().generatedByDefaultAsIdentity({
-    name: "goose_db_version_id_seq",
-    startWith: 1,
-    increment: 1,
-    minValue: 1,
-    maxValue: 2147483647,
-    cache: 1,
-  }),
+  id: integer()
+    .primaryKey()
+    .generatedByDefaultAsIdentity({
+      name: "goose_db_version_id_seq",
+      startWith: 1,
+      increment: 1,
+      minValue: 1,
+      maxValue: 2147483647,
+      cache: 1,
+    }),
   // You can use { mode: "bigint" } if numbers are exceeding js number limitations
   versionId: bigint("version_id", { mode: "number" }).notNull(),
   isApplied: boolean("is_applied").notNull(),
@@ -116,5 +120,33 @@ export const seizureRecordShares = pgTable(
       foreignColumns: [userProfiles.id],
       name: "seizure_record_shares_shared_by_fkey",
     }),
+  ],
+);
+
+export const careHomeMembers = pgTable(
+  "care_home_members",
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    userId: uuid("user_id").notNull(),
+    careHomeId: uuid("care_home_id").notNull(),
+    createdAt: timestamp("created_at", { mode: "string" })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.careHomeId],
+      foreignColumns: [careHome.id],
+      name: "care_home_members_care_home_id_fkey",
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [userProfiles.id],
+      name: "care_home_members_user_id_fkey",
+    }).onDelete("cascade"),
+    unique("care_home_members_user_id_care_home_id_key").on(
+      table.userId,
+      table.careHomeId,
+    ),
   ],
 );
