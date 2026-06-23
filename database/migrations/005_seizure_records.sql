@@ -2,7 +2,7 @@
 CREATE TABLE seizure_records (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
     patient_id uuid REFERENCES patients (id),
-    recorded_by uuid REFERENCES auth.users (id),
+    recorded_by uuid REFERENCES user_profiles (id),
     video_id uuid REFERENCES files (id),
     recorded_at timestamp,
     duration_seconds integer,
