@@ -10,7 +10,6 @@ import {
   date,
   text,
 } from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
 
 export const gooseDbVersion = pgTable("goose_db_version", {
   id: integer().primaryKey().generatedByDefaultAsIdentity({
