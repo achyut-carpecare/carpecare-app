@@ -1,0 +1,121 @@
+import {
+  pgTable,
+  integer,
+  bigint,
+  boolean,
+  timestamp,
+  uuid,
+  varchar,
+  foreignKey,
+  date,
+  text,
+} from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
+
+export const gooseDbVersion = pgTable("goose_db_version", {
+  id: integer().primaryKey().generatedByDefaultAsIdentity({
+    name: "goose_db_version_id_seq",
+    startWith: 1,
+    increment: 1,
+    minValue: 1,
+    maxValue: 2147483647,
+    cache: 1,
+  }),
+  // You can use { mode: "bigint" } if numbers are exceeding js number limitations
+  versionId: bigint("version_id", { mode: "number" }).notNull(),
+  isApplied: boolean("is_applied").notNull(),
+  tstamp: timestamp({ mode: "string" }).defaultNow().notNull(),
+});
+
+export const careHome = pgTable("care_home", {
+  id: uuid().defaultRandom().primaryKey().notNull(),
+  name: varchar(),
+});
+
+export const patients = pgTable(
+  "patients",
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    careHomeId: uuid("care_home_id"),
+    firstName: varchar("first_name"),
+    lastName: varchar("last_name"),
+    dateOfBirth: date("date_of_birth"),
+    nhsNumber: varchar("nhs_number"),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.careHomeId],
+      foreignColumns: [careHome.id],
+      name: "patients_care_home_id_fkey",
+    }),
+  ],
+);
+
+export const seizureRecords = pgTable(
+  "seizure_records",
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    patientId: uuid("patient_id"),
+    recordedBy: uuid("recorded_by"),
+    videoId: uuid("video_id"),
+    recordedAt: timestamp("recorded_at", { mode: "string" }),
+    durationSeconds: integer("duration_seconds"),
+    seizureType: varchar("seizure_type"),
+    notes: text(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.patientId],
+      foreignColumns: [patients.id],
+      name: "seizure_records_patient_id_fkey",
+    }),
+    foreignKey({
+      columns: [table.recordedBy],
+      foreignColumns: [userProfiles.id],
+      name: "seizure_records_recorded_by_fkey",
+    }),
+    foreignKey({
+      columns: [table.videoId],
+      foreignColumns: [files.id],
+      name: "seizure_records_video_id_fkey",
+    }),
+  ],
+);
+
+export const userProfiles = pgTable("user_profiles", {
+  id: uuid().primaryKey().notNull(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+});
+
+export const files = pgTable("files", {
+  id: uuid().defaultRandom().primaryKey().notNull(),
+  s3Key: varchar("s3_key"),
+  mimeType: varchar("mime_type"),
+  // You can use { mode: "bigint" } if numbers are exceeding js number limitations
+  sizeBytes: bigint("size_bytes", { mode: "number" }),
+  uploadedAt: timestamp("uploaded_at", { mode: "string" }),
+});
+
+export const seizureRecordShares = pgTable(
+  "seizure_record_shares",
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    seizureRecordId: uuid("seizure_record_id"),
+    sharedBy: uuid("shared_by"),
+    recipientEmail: varchar("recipient_email"),
+    expiresAt: timestamp("expires_at", { mode: "string" }),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.seizureRecordId],
+      foreignColumns: [seizureRecords.id],
+      name: "seizure_record_shares_seizure_record_id_fkey",
+    }),
+    foreignKey({
+      columns: [table.sharedBy],
+      foreignColumns: [userProfiles.id],
+      name: "seizure_record_shares_shared_by_fkey",
+    }),
+  ],
+);
