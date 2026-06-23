@@ -1,20 +1,30 @@
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { schema, type DB } from "..";
 import type { DBInsertTables, DBTables, DBUpdateTables } from "../types";
 
 export async function getSeizureRecordShares(
   db: DB,
   {
+    seizureRecordIds,
     offset,
     limit,
   }: {
+    seizureRecordIds?: string[];
     offset?: number;
     limit?: number;
   } = {},
 ): Promise<DBTables["seizureRecordShares"][]> {
+  const conditions: ReturnType<typeof eq>[] = [];
+  if (seizureRecordIds && seizureRecordIds.length > 0) {
+    conditions.push(
+      inArray(schema.seizureRecordShares.seizureRecordId, seizureRecordIds),
+    );
+  }
+
   return await db
     .select()
     .from(schema.seizureRecordShares)
+    .where(and(...conditions))
     .limit(limit ?? 100)
     .offset(offset ?? 0);
 }
@@ -22,11 +32,29 @@ export async function getSeizureRecordShares(
 export async function getSeizureRecordShareById(
   db: DB,
   id: string,
+  {
+    seizureRecordIds,
+  }: {
+    seizureRecordIds?: string[];
+  } = {},
 ): Promise<DBTables["seizureRecordShares"] | undefined> {
   const [share] = await db
     .select()
     .from(schema.seizureRecordShares)
-    .where(eq(schema.seizureRecordShares.id, id));
+    .where(
+      and(
+        eq(schema.seizureRecordShares.id, id),
+        ...(seizureRecordIds && seizureRecordIds.length > 0
+          ? [
+              inArray(
+                schema.seizureRecordShares.seizureRecordId,
+                seizureRecordIds,
+              ),
+            ]
+          : []),
+      ),
+    )
+    .limit(1);
   return share;
 }
 

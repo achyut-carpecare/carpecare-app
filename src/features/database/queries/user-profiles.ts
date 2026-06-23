@@ -2,10 +2,6 @@ import { eq } from "drizzle-orm";
 import { schema, type DB } from "..";
 import type { DBInsertTables, DBTables, DBUpdateTables } from "../types";
 
-export type UserProfileWithEmail = DBTables["userProfiles"] & {
-  email: string | null;
-};
-
 export async function getUserProfiles(
   db: DB,
   {
@@ -15,19 +11,10 @@ export async function getUserProfiles(
     offset?: number;
     limit?: number;
   } = {},
-): Promise<UserProfileWithEmail[]> {
+): Promise<DBTables["userProfiles"][]> {
   return await db
-    .select({
-      id: schema.userProfiles.id,
-      firstName: schema.userProfiles.firstName,
-      lastName: schema.userProfiles.lastName,
-      email: schema.usersInAuth.email,
-    })
+    .select()
     .from(schema.userProfiles)
-    .innerJoin(
-      schema.usersInAuth,
-      eq(schema.userProfiles.id, schema.usersInAuth.id),
-    )
     .limit(limit ?? 100)
     .offset(offset ?? 0);
 }
@@ -35,19 +22,10 @@ export async function getUserProfiles(
 export async function getUserProfileById(
   db: DB,
   id: string,
-): Promise<UserProfileWithEmail | undefined> {
+): Promise<DBTables["userProfiles"] | undefined> {
   const [user] = await db
-    .select({
-      id: schema.userProfiles.id,
-      firstName: schema.userProfiles.firstName,
-      lastName: schema.userProfiles.lastName,
-      email: schema.usersInAuth.email,
-    })
+    .select()
     .from(schema.userProfiles)
-    .innerJoin(
-      schema.usersInAuth,
-      eq(schema.userProfiles.id, schema.usersInAuth.id),
-    )
     .where(eq(schema.userProfiles.id, id));
   return user;
 }
