@@ -1,0 +1,9 @@
+* text=auto
+
+# Keep hook and shell files LF so Git Bash can run them on Windows.
+.husky/* text eol=lf
+.husky/_/* text eol=lf
+*.sh text eol=lf
+
+# Keep SQL migrations consistent across platforms.
+database/migrations/*.sql text eol=lf

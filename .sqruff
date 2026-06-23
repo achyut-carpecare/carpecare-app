@@ -1,0 +1,4 @@
+[sqruff]
+dialect = postgres
+rules = all
+exclude_rules = LT05
