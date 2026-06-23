@@ -4,9 +4,9 @@ import {
   bigint,
   boolean,
   timestamp,
+  foreignKey,
   uuid,
   varchar,
-  foreignKey,
   date,
   text,
   unique,
@@ -34,9 +34,60 @@ export const gooseDbVersion = pgTable("goose_db_version", {
   tstamp: timestamp({ mode: "string" }).defaultNow().notNull(),
 });
 
+export const seizureRecordShares = pgTable(
+  "seizure_record_shares",
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    seizureRecordId: uuid("seizure_record_id"),
+    sharedBy: uuid("shared_by"),
+    recipientEmail: varchar("recipient_email"),
+    expiresAt: timestamp("expires_at", { mode: "string" }),
+    createdAt: timestamp("created_at", { mode: "string" })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { mode: "string" })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.seizureRecordId],
+      foreignColumns: [seizureRecords.id],
+      name: "seizure_record_shares_seizure_record_id_fkey",
+    }),
+    foreignKey({
+      columns: [table.sharedBy],
+      foreignColumns: [userProfiles.id],
+      name: "seizure_record_shares_shared_by_fkey",
+    }),
+  ],
+);
+
+export const userProfiles = pgTable("user_profiles", {
+  id: uuid().primaryKey().notNull(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  role: appRole().default("care_home_user").notNull(),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
+});
+
+export const files = pgTable("files", {
+  id: uuid().defaultRandom().primaryKey().notNull(),
+  s3Key: varchar("s3_key"),
+  mimeType: varchar("mime_type"),
+  // You can use { mode: "bigint" } if numbers are exceeding js number limitations
+  sizeBytes: bigint("size_bytes", { mode: "number" }),
+  uploadedAt: timestamp("uploaded_at", { mode: "string" }),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
+});
+
 export const careHome = pgTable("care_home", {
   id: uuid().defaultRandom().primaryKey().notNull(),
   name: varchar(),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
 });
 
 export const patients = pgTable(
@@ -48,6 +99,12 @@ export const patients = pgTable(
     lastName: varchar("last_name"),
     dateOfBirth: date("date_of_birth"),
     nhsNumber: varchar("nhs_number"),
+    createdAt: timestamp("created_at", { mode: "string" })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { mode: "string" })
+      .defaultNow()
+      .notNull(),
   },
   (table) => [
     foreignKey({
@@ -69,6 +126,12 @@ export const seizureRecords = pgTable(
     durationSeconds: integer("duration_seconds"),
     seizureType: varchar("seizure_type"),
     notes: text(),
+    createdAt: timestamp("created_at", { mode: "string" })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { mode: "string" })
+      .defaultNow()
+      .notNull(),
   },
   (table) => [
     foreignKey({
@@ -89,55 +152,19 @@ export const seizureRecords = pgTable(
   ],
 );
 
-export const files = pgTable("files", {
-  id: uuid().defaultRandom().primaryKey().notNull(),
-  s3Key: varchar("s3_key"),
-  mimeType: varchar("mime_type"),
-  // You can use { mode: "bigint" } if numbers are exceeding js number limitations
-  sizeBytes: bigint("size_bytes", { mode: "number" }),
-  uploadedAt: timestamp("uploaded_at", { mode: "string" }),
-});
-
-export const seizureRecordShares = pgTable(
-  "seizure_record_shares",
-  {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    seizureRecordId: uuid("seizure_record_id"),
-    sharedBy: uuid("shared_by"),
-    recipientEmail: varchar("recipient_email"),
-    expiresAt: timestamp("expires_at", { mode: "string" }),
-  },
-  (table) => [
-    foreignKey({
-      columns: [table.seizureRecordId],
-      foreignColumns: [seizureRecords.id],
-      name: "seizure_record_shares_seizure_record_id_fkey",
-    }),
-    foreignKey({
-      columns: [table.sharedBy],
-      foreignColumns: [userProfiles.id],
-      name: "seizure_record_shares_shared_by_fkey",
-    }),
-  ],
-);
-
-export const userProfiles = pgTable("user_profiles", {
-  id: uuid().primaryKey().notNull(),
-  firstName: varchar("first_name"),
-  lastName: varchar("last_name"),
-  role: appRole().default("care_home_user").notNull(),
-});
-
 export const careHomeMembers = pgTable(
   "care_home_members",
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
     userId: uuid("user_id").notNull(),
     careHomeId: uuid("care_home_id").notNull(),
+    role: careHomeRole().default("member").notNull(),
     createdAt: timestamp("created_at", { mode: "string" })
       .defaultNow()
       .notNull(),
-    role: careHomeRole().default("member").notNull(),
+    updatedAt: timestamp("updated_at", { mode: "string" })
+      .defaultNow()
+      .notNull(),
   },
   (table) => [
     foreignKey({

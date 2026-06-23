@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, gte, max, sql } from "drizzle-orm";
 import { schema, type DB } from "..";
 import type { DBInsertTables, DBTables, DBUpdateTables } from "../types";
 
@@ -96,4 +96,38 @@ export async function deletePatientById(
     )
     .returning();
   return deletedPatient;
+}
+
+export async function getPatientsWithLastSeizure(db: DB, careHomeId: string) {
+  const patients = await getPatients(db, { careHomeId });
+
+  const rows = await db
+    .select({
+      patientId: schema.seizureRecords.patientId,
+      lastRecordedAt: max(schema.seizureRecords.recordedAt),
+      totalEvents: sql<number>`cast(count(*) as integer)`,
+    })
+    .from(schema.seizureRecords)
+    .innerJoin(
+      schema.patients,
+      eq(schema.seizureRecords.patientId, schema.patients.id),
+    )
+    .where(eq(schema.patients.careHomeId, careHomeId))
+    .groupBy(schema.seizureRecords.patientId);
+
+  const statsByPatient = new Map(
+    rows.map((r) => [
+      r.patientId,
+      { lastRecordedAt: r.lastRecordedAt, totalEvents: r.totalEvents },
+    ]),
+  );
+
+  return patients.map((patient) => {
+    const stats = statsByPatient.get(patient.id);
+    return {
+      ...patient,
+      lastRecordedAt: stats?.lastRecordedAt ?? null,
+      totalEvents: stats?.totalEvents ?? 0,
+    };
+  });
 }

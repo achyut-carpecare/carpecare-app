@@ -1,100 +1,105 @@
-export default function AppPage() {
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { Building2, Users, ArrowRight } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { db } from "@/features/database";
+import { createClient } from "@/features/auth/server";
+import {
+  getCareHomeCounts,
+  getUserWithMemberships,
+} from "@/features/database/queries";
+
+export default async function AppPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/auth/login");
+  }
+
+  const result = await getUserWithMemberships(db, user.id);
+
+  if (!result) {
+    redirect("/auth/login");
+  }
+
+  const { profile, memberships } = result;
+
+  if (profile.role === "system_admin") {
+    redirect("/app/admin");
+  }
+
+  if (memberships.length === 0) {
+    return (
+      <div className="max-w-xl mx-auto py-12 text-center space-y-4">
+        <h1 className="text-2xl font-bold">No care home yet</h1>
+        <p className="text-muted-foreground">
+          You are not assigned to any care home. Contact your administrator.
+        </p>
+      </div>
+    );
+  }
+
+  if (memberships.length === 1) {
+    redirect(`/app/care-homes/${memberships[0].careHome.id}`);
+  }
+
+  const careHomesWithCounts = await Promise.all(
+    memberships.map(async (membership) => {
+      const counts = await getCareHomeCounts(db, membership.careHome.id);
+      return {
+        ...membership.careHome,
+        role: membership.role,
+        ...counts,
+      };
+    }),
+  );
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="space-y-2">
-        <h1 className="text-2xl font-heading font-bold">Dashboard</h1>
-        <p className="text-muted-foreground">
-          Welcome to your Carpe Care workspace.
-        </p>
+        <h1 className="text-2xl font-bold">Your care homes</h1>
+        <p className="text-muted-foreground">Choose a care home to continue.</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="rounded-2xl border border-border bg-card p-6 space-y-2">
-          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-            <svg
-              className="w-5 h-5 text-primary"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-              />
-            </svg>
-          </div>
-          <h3 className="font-medium">Video Trimmer</h3>
-          <p className="text-sm text-muted-foreground">
-            Trim and process video recordings before sharing with clinicians.
-          </p>
-          <a
-            href="/app/video-trimmer"
-            className="inline-flex items-center text-sm text-primary hover:underline"
-          >
-            Go to trimmer
-            <svg
-              className="w-4 h-4 ml-1"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 5l7 7-7 7"
-              />
-            </svg>
-          </a>
-        </div>
-
-        <div className="rounded-2xl border border-border bg-card p-6 space-y-2">
-          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-            <svg
-              className="w-5 h-5 text-primary"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-              />
-            </svg>
-          </div>
-          <h3 className="font-medium">Patients</h3>
-          <p className="text-sm text-muted-foreground">
-            Manage patient profiles and care records.
-          </p>
-          <span className="text-sm text-muted-foreground">Coming soon</span>
-        </div>
-
-        <div className="rounded-2xl border border-border bg-card p-6 space-y-2">
-          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-            <svg
-              className="w-5 h-5 text-primary"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
-          </div>
-          <h3 className="font-medium">Reports</h3>
-          <p className="text-sm text-muted-foreground">
-            Generate and review clinical event reports.
-          </p>
-          <span className="text-sm text-muted-foreground">Coming soon</span>
-        </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {careHomesWithCounts.map((home) => (
+          <Card key={home.id} className="rounded-2xl">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Building2 className="w-5 h-5 text-primary" />
+                {home.name ?? "Unnamed care home"}
+              </CardTitle>
+              <CardDescription className="capitalize">
+                {home.role.toLowerCase().replace("_", " ")}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <div className="flex items-center gap-1.5">
+                  <Users className="w-4 h-4" />
+                  {home.patientCount} residents
+                </div>
+                <div>{home.eventsThisMonth} events this month</div>
+              </div>
+              <Button asChild className="w-full rounded-xl">
+                <Link href={`/app/care-homes/${home.id}`}>
+                  Open care home
+                  <ArrowRight className="w-4 h-4 ml-2" />
+                </Link>
+              </Button>
+            </CardContent>
+          </Card>
+        ))}
       </div>
     </div>
   );

@@ -68,6 +68,46 @@ export async function getSeizureRecordById(
   return rows[0]?.seizureRecord;
 }
 
+export async function getSeizureRecordWithDetails(
+  db: DB,
+  id: string,
+  {
+    careHomeId,
+    patientId,
+  }: {
+    careHomeId?: string;
+    patientId?: string;
+  } = {},
+) {
+  const rows = await db
+    .select({
+      seizureRecord: schema.seizureRecords,
+      patient: schema.patients,
+      recorder: schema.userProfiles,
+      file: schema.files,
+    })
+    .from(schema.seizureRecords)
+    .innerJoin(
+      schema.patients,
+      eq(schema.seizureRecords.patientId, schema.patients.id),
+    )
+    .leftJoin(
+      schema.userProfiles,
+      eq(schema.seizureRecords.recordedBy, schema.userProfiles.id),
+    )
+    .leftJoin(schema.files, eq(schema.seizureRecords.videoId, schema.files.id))
+    .where(
+      and(
+        eq(schema.seizureRecords.id, id),
+        ...(patientId ? [eq(schema.seizureRecords.patientId, patientId)] : []),
+        ...(careHomeId ? [eq(schema.patients.careHomeId, careHomeId)] : []),
+      ),
+    )
+    .limit(1);
+
+  return rows[0];
+}
+
 export async function createSeizureRecord(
   db: DB,
   data: DBInsertTables["seizureRecords"],
@@ -91,7 +131,6 @@ export async function updateSeizureRecordById(
     patientId?: string;
   } = {},
 ): Promise<DBTables["seizureRecords"] | undefined> {
-  // Scoped update requires verifying the record belongs to the care home.
   if (careHomeId || patientId) {
     const existing = await getSeizureRecordById(db, id, {
       careHomeId,
