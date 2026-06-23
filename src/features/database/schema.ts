@@ -10,8 +10,12 @@ import {
   date,
   text,
   unique,
+  pgEnum,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
+
+export const appRole = pgEnum("app_role", ["system_admin", "care_home_user"]);
+export const careHomeRole = pgEnum("care_home_role", ["admin", "member"]);
 
 export const gooseDbVersion = pgTable("goose_db_version", {
   id: integer()
@@ -85,12 +89,6 @@ export const seizureRecords = pgTable(
   ],
 );
 
-export const userProfiles = pgTable("user_profiles", {
-  id: uuid().primaryKey().notNull(),
-  firstName: varchar("first_name"),
-  lastName: varchar("last_name"),
-});
-
 export const files = pgTable("files", {
   id: uuid().defaultRandom().primaryKey().notNull(),
   s3Key: varchar("s3_key"),
@@ -123,6 +121,13 @@ export const seizureRecordShares = pgTable(
   ],
 );
 
+export const userProfiles = pgTable("user_profiles", {
+  id: uuid().primaryKey().notNull(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  role: appRole().default("care_home_user").notNull(),
+});
+
 export const careHomeMembers = pgTable(
   "care_home_members",
   {
@@ -132,6 +137,7 @@ export const careHomeMembers = pgTable(
     createdAt: timestamp("created_at", { mode: "string" })
       .defaultNow()
       .notNull(),
+    role: careHomeRole().default("member").notNull(),
   },
   (table) => [
     foreignKey({
