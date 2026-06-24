@@ -5,6 +5,11 @@ CREATE TABLE seizure_record_shares (
     shared_by uuid REFERENCES user_profiles (id),
     recipient_email varchar,
     expires_at timestamp,
+    link_token_hash text,
+    otp_hash text,
+    otp_attempts integer DEFAULT 0,
+    last_otp_sent_at timestamp,
+    accessed_at timestamp,
     created_at timestamp DEFAULT now() NOT NULL,
     updated_at timestamp DEFAULT now() NOT NULL
 );
