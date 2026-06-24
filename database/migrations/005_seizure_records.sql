@@ -7,7 +7,9 @@ CREATE TABLE seizure_records (
     recorded_at timestamp,
     duration_seconds integer,
     seizure_type varchar,
-    notes text
+    notes text,
+    created_at timestamp DEFAULT now() NOT NULL,
+    updated_at timestamp DEFAULT now() NOT NULL
 );
 
 -- +goose Down

@@ -4,7 +4,9 @@ CREATE TABLE files (
     s3_key varchar,
     mime_type varchar,
     size_bytes bigint,
-    uploaded_at timestamp
+    uploaded_at timestamp,
+    created_at timestamp DEFAULT now() NOT NULL,
+    updated_at timestamp DEFAULT now() NOT NULL
 );
 
 -- +goose Down
