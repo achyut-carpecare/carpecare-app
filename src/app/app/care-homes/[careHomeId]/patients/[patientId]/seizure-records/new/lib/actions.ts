@@ -10,12 +10,14 @@ export async function createSeizureRecordAction({
   durationSeconds,
   seizureType,
   notes,
+  videoId,
 }: {
   patientId: string;
   recordedAt: string;
   durationSeconds: number;
   seizureType?: string;
   notes?: string;
+  videoId?: string;
 }) {
   try {
     if (!recordedAt || !durationSeconds || durationSeconds <= 0) {
@@ -28,6 +30,7 @@ export async function createSeizureRecordAction({
       durationSeconds,
       seizureType: seizureType?.trim() || null,
       notes: notes?.trim() || null,
+      videoId: videoId ?? null,
     });
 
     revalidatePath(`/app/care-homes`);

@@ -9,9 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { VideoTrimmerUI } from "@/components/video-trimmer";
-import { useVideoTrimmer } from "@/components/video-trimmer/lib/use-video-trimmer";
+import { VideoTrimmer } from "./components/video-trimmer";
 import { createSeizureRecordAction } from "./lib/actions";
+import { uploadVideoFile } from "@/features/storage/actions";
 import { toast } from "@/components/ui/sonner";
 
 interface NewSeizureRecordPageProps {
@@ -24,9 +24,10 @@ export default function NewSeizureRecordPage({
   const { careHomeId, patientId } = use(params);
   const router = useRouter();
 
-  const trimmer = useVideoTrimmer();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [trimmedFile, setTrimmedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [formData, setFormData] = useState({
     recordedAt: new Date().toISOString().slice(0, 16),
     durationSeconds: "",
@@ -41,8 +42,33 @@ export default function NewSeizureRecordPage({
     setFormData((prev) => ({ ...prev, [field]: value }));
   }
 
+  function handleTrimComplete(file: File) {
+    setTrimmedFile(file);
+    toast.success("Video trimmed and ready");
+  }
+
   async function handleSubmit() {
     setIsSubmitting(true);
+    setIsUploading(true);
+
+    let videoId: string | undefined;
+
+    if (trimmedFile) {
+      const formData = new FormData();
+      formData.set("video", trimmedFile);
+      const uploadResult = await uploadVideoFile(formData);
+      setIsUploading(false);
+
+      if (uploadResult.error) {
+        setIsSubmitting(false);
+        toast.error(uploadResult.error);
+        return;
+      }
+
+      videoId = uploadResult.fileId;
+    } else {
+      setIsUploading(false);
+    }
 
     const result = await createSeizureRecordAction({
       patientId,
@@ -50,6 +76,7 @@ export default function NewSeizureRecordPage({
       durationSeconds: Number(formData.durationSeconds),
       seizureType: formData.seizureType,
       notes: formData.notes,
+      videoId,
     });
 
     setIsSubmitting(false);
@@ -91,43 +118,11 @@ export default function NewSeizureRecordPage({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {trimmer.status !== "idle" ? (
-              <VideoTrimmerUI
-                videoRef={trimmer.videoRef}
-                timelineRef={trimmer.timelineRef}
-                fileInputRef={trimmer.fileInputRef}
-                videoUrl={trimmer.videoUrl}
-                duration={trimmer.duration}
-                currentTime={trimmer.currentTime}
-                isPlaying={trimmer.isPlaying}
-                startTime={trimmer.startTime}
-                endTime={trimmer.endTime}
-                thumbnails={trimmer.thumbnails}
-                status={trimmer.status}
-                trimmedUrl={trimmer.trimmedUrl}
-                error={trimmer.error}
-                onFileSelect={trimmer.handleFileSelect}
-                onTogglePlay={trimmer.togglePlay}
-                onTimelineClick={trimmer.handleTimelineClick}
-                onDragStart={trimmer.handleDragStart}
-                onTrim={trimmer.handleTrim}
-                onSave={trimmer.handleSave}
-                onBackToEditor={trimmer.handleBackToEditor}
-              />
-            ) : (
-              <div className="border-2 border-dashed border-border rounded-2xl p-12 text-center">
-                <p className="text-muted-foreground">
-                  Loading video trimmer...
-                </p>
-              </div>
-            )}
+            <VideoTrimmer onTrimComplete={handleTrimComplete} />
             <div className="flex justify-end">
               <Button
                 onClick={() => setStep(2)}
-                disabled={
-                  !trimmer.videoRef.current ||
-                  (trimmer.status !== "ready" && trimmer.status !== "preview")
-                }
+                disabled={!trimmedFile}
                 className="rounded-xl"
               >
                 Continue
@@ -240,9 +235,7 @@ export default function NewSeizureRecordPage({
               </div>
               <div>
                 <span className="font-semibold">Video:</span>{" "}
-                {trimmer.videoFile
-                  ? trimmer.videoFile.name
-                  : "No video attached"}
+                {trimmedFile ? trimmedFile.name : "No video attached"}
               </div>
             </div>
             <div className="flex justify-between">
@@ -255,10 +248,14 @@ export default function NewSeizureRecordPage({
               </Button>
               <Button
                 onClick={handleSubmit}
-                disabled={isSubmitting}
+                disabled={isSubmitting || isUploading}
                 className="rounded-xl"
               >
-                {isSubmitting ? "Saving..." : "Save event"}
+                {isUploading
+                  ? "Uploading video..."
+                  : isSubmitting
+                    ? "Saving..."
+                    : "Save event"}
               </Button>
             </div>
           </CardContent>

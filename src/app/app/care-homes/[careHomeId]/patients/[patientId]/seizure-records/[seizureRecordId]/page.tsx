@@ -17,6 +17,7 @@ import {
   formatDuration,
   formatName,
 } from "@/features/dashboard/lib/format";
+import { getSignedVideoUrl } from "@/features/storage/actions";
 import { ShareDialog } from "./components/share-dialog";
 
 interface SeizureRecordPageProps {
@@ -77,6 +78,10 @@ export default async function SeizureRecordPage({
 
   const { seizureRecord, recorder, file } = recordWithDetails;
 
+  const videoUrl = file?.s3Key
+    ? await getSignedVideoUrl(file.s3Key, 300)
+    : null;
+
   return (
     <div className="space-y-6">
       <Link
@@ -114,10 +119,10 @@ export default async function SeizureRecordPage({
           <CardTitle className="text-base">Video</CardTitle>
         </CardHeader>
         <CardContent className="p-6 pt-0">
-          <div className="aspect-video bg-slate-900 rounded-xl flex items-center justify-center text-slate-300">
-            {file ? (
+          <div className="aspect-video bg-slate-900 rounded-xl flex items-center justify-center text-slate-300 overflow-hidden">
+            {videoUrl ? (
               <video
-                src={`/api/files/${file.id}`}
+                src={videoUrl}
                 controls
                 className="w-full h-full rounded-xl"
               />
