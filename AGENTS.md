@@ -108,7 +108,7 @@ Cross-feature imports are fine via `@/features/{feature}/...`, but keep the surf
 - **Postgres**: Supabase-hosted (`otblessssxmgyroboxro`)
 - **Migrations**: `database/migrations/` (currently empty). `.env` also configures goose (`GOOSE_MIGRATION_DIR`) — legacy setup, Drizzle Kit is the active migration tool.
 - **Connection**: `DATABASE_URL` in `.env` points to Supabase direct connection by default.
-- **Auth middleware**: `src/features/auth/middleware.ts` handles session refresh and redirects unauthed users to `/auth/login`. It is **not** mounted as Next.js root middleware (`src/middleware.ts` doesn't exist). Integrate it into route handlers or add a root middleware that calls it when auth gating is needed.
+- **Auth proxy**: `src/proxy.ts` is the Next.js 16 root proxy (formerly `middleware.ts`). It calls `updateSession` from `src/features/auth/middleware.ts` to refresh Supabase sessions and redirect unauthed users to `/auth/login`. `src/middleware.ts` is intentionally absent because Next.js 16 renamed the convention to `proxy.ts`.
 - **Environment**: `.env` is gitignored but present locally. `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` are required for Supabase clients.
 
 ## shadcn/ui & Tailwind v4
