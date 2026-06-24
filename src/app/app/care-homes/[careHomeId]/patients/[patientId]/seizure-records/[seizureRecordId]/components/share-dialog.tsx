@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Share2 } from "lucide-react";
+import { Share2, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -26,7 +26,7 @@ export function ShareDialog({ seizureRecordId }: ShareDialogProps) {
   const [email, setEmail] = useState("");
   const [expiresInDays, setExpiresInDays] = useState("7");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [sentTo, setSentTo] = useState<string | null>(null);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -46,15 +46,19 @@ export function ShareDialog({ seizureRecordId }: ShareDialogProps) {
     }
 
     if (result.share) {
-      setShareUrl(`${window.location.origin}/share/${result.share.id}`);
-      toast.success("Share link created");
+      setSentTo(result.share.recipientEmail ?? email);
+      toast.success("Secure link sent to recipient");
     }
   }
 
-  function copyLink() {
-    if (!shareUrl) return;
-    navigator.clipboard.writeText(shareUrl);
-    toast.success("Link copied");
+  function handleClose() {
+    setOpen(false);
+    // Reset form state after the dialog animation finishes.
+    setTimeout(() => {
+      setEmail("");
+      setExpiresInDays("7");
+      setSentTo(null);
+    }, 200);
   }
 
   return (
@@ -70,72 +74,72 @@ export function ShareDialog({ seizureRecordId }: ShareDialogProps) {
           <DialogHeader>
             <DialogTitle>Share with medic</DialogTitle>
             <DialogDescription>
-              Create a secure, read-only link for this seizure record.
+              Create a secure, read-only link for this seizure record and email
+              it directly to the recipient.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Recipient email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="dr.rivera@example.com"
-                className="rounded-xl"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="expires">Expires in (days)</Label>
-              <Input
-                id="expires"
-                type="number"
-                min={1}
-                max={30}
-                value={expiresInDays}
-                onChange={(e) => setExpiresInDays(e.target.value)}
-                className="rounded-xl"
-                required
-              />
-            </div>
-            {shareUrl && (
-              <div className="space-y-2">
-                <Label>Share link</Label>
-                <div className="flex gap-2">
-                  <Input
-                    readOnly
-                    value={shareUrl}
-                    className="rounded-xl bg-muted"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={copyLink}
-                    className="rounded-xl"
-                  >
-                    Copy
-                  </Button>
+            {sentTo ? (
+              <div className="flex flex-col items-center gap-3 py-4">
+                <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center">
+                  <Check className="w-6 h-6 text-green-600" />
+                </div>
+                <div className="text-center space-y-1">
+                  <p className="font-medium">Secure link sent</p>
+                  <p className="text-sm text-muted-foreground">
+                    A verification-protected link has been emailed to{" "}
+                    <strong>{sentTo}</strong>.
+                  </p>
                 </div>
               </div>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Recipient email</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="dr.rivera@example.com"
+                    className="rounded-xl"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="expires">Expires in (days)</Label>
+                  <Input
+                    id="expires"
+                    type="number"
+                    min={1}
+                    max={30}
+                    value={expiresInDays}
+                    onChange={(e) => setExpiresInDays(e.target.value)}
+                    className="rounded-xl"
+                    required
+                  />
+                </div>
+              </>
             )}
           </div>
           <DialogFooter>
             <Button
               type="button"
               variant="outline"
-              onClick={() => setOpen(false)}
+              onClick={handleClose}
               className="rounded-xl"
             >
-              Close
+              {sentTo ? "Close" : "Cancel"}
             </Button>
-            <Button
-              type="submit"
-              disabled={isSubmitting || !email.trim()}
-              className="rounded-xl"
-            >
-              {isSubmitting ? "Creating..." : "Create link"}
-            </Button>
+            {!sentTo && (
+              <Button
+                type="submit"
+                disabled={isSubmitting || !email.trim()}
+                className="rounded-xl"
+              >
+                {isSubmitting ? "Sending..." : "Send secure link"}
+              </Button>
+            )}
           </DialogFooter>
         </form>
       </DialogContent>

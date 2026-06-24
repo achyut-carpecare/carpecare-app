@@ -1,52 +1,13 @@
 import { relations } from "drizzle-orm/relations";
 import {
-  seizureRecords,
-  seizureRecordShares,
-  userProfiles,
   careHome,
   patients,
-  files,
   careHomeMembers,
-} from "./schema";
-
-export const seizureRecordSharesRelations = relations(
-  seizureRecordShares,
-  ({ one }) => ({
-    seizureRecord: one(seizureRecords, {
-      fields: [seizureRecordShares.seizureRecordId],
-      references: [seizureRecords.id],
-    }),
-    userProfile: one(userProfiles, {
-      fields: [seizureRecordShares.sharedBy],
-      references: [userProfiles.id],
-    }),
-  }),
-);
-
-export const seizureRecordsRelations = relations(
+  userProfiles,
   seizureRecords,
-  ({ one, many }) => ({
-    seizureRecordShares: many(seizureRecordShares),
-    patient: one(patients, {
-      fields: [seizureRecords.patientId],
-      references: [patients.id],
-    }),
-    userProfile: one(userProfiles, {
-      fields: [seizureRecords.recordedBy],
-      references: [userProfiles.id],
-    }),
-    file: one(files, {
-      fields: [seizureRecords.videoId],
-      references: [files.id],
-    }),
-  }),
-);
-
-export const userProfilesRelations = relations(userProfiles, ({ many }) => ({
-  seizureRecordShares: many(seizureRecordShares),
-  seizureRecords: many(seizureRecords),
-  careHomeMembers: many(careHomeMembers),
-}));
+  files,
+  seizureRecordShares,
+} from "./schema";
 
 export const patientsRelations = relations(patients, ({ one, many }) => ({
   careHome: one(careHome, {
@@ -61,10 +22,6 @@ export const careHomeRelations = relations(careHome, ({ many }) => ({
   careHomeMembers: many(careHomeMembers),
 }));
 
-export const filesRelations = relations(files, ({ many }) => ({
-  seizureRecords: many(seizureRecords),
-}));
-
 export const careHomeMembersRelations = relations(
   careHomeMembers,
   ({ one }) => ({
@@ -74,6 +31,49 @@ export const careHomeMembersRelations = relations(
     }),
     userProfile: one(userProfiles, {
       fields: [careHomeMembers.userId],
+      references: [userProfiles.id],
+    }),
+  }),
+);
+
+export const userProfilesRelations = relations(userProfiles, ({ many }) => ({
+  careHomeMembers: many(careHomeMembers),
+  seizureRecords: many(seizureRecords),
+  seizureRecordShares: many(seizureRecordShares),
+}));
+
+export const seizureRecordsRelations = relations(
+  seizureRecords,
+  ({ one, many }) => ({
+    patient: one(patients, {
+      fields: [seizureRecords.patientId],
+      references: [patients.id],
+    }),
+    userProfile: one(userProfiles, {
+      fields: [seizureRecords.recordedBy],
+      references: [userProfiles.id],
+    }),
+    file: one(files, {
+      fields: [seizureRecords.videoId],
+      references: [files.id],
+    }),
+    seizureRecordShares: many(seizureRecordShares),
+  }),
+);
+
+export const filesRelations = relations(files, ({ many }) => ({
+  seizureRecords: many(seizureRecords),
+}));
+
+export const seizureRecordSharesRelations = relations(
+  seizureRecordShares,
+  ({ one }) => ({
+    seizureRecord: one(seizureRecords, {
+      fields: [seizureRecordShares.seizureRecordId],
+      references: [seizureRecords.id],
+    }),
+    userProfile: one(userProfiles, {
+      fields: [seizureRecordShares.sharedBy],
       references: [userProfiles.id],
     }),
   }),

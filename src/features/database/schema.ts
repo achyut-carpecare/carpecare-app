@@ -1,91 +1,21 @@
 import {
   pgTable,
-  integer,
-  bigint,
-  boolean,
-  timestamp,
   foreignKey,
   uuid,
   varchar,
   date,
-  text,
+  timestamp,
+  bigint,
+  integer,
+  boolean,
   unique,
+  text,
   pgEnum,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 
 export const appRole = pgEnum("app_role", ["system_admin", "care_home_user"]);
 export const careHomeRole = pgEnum("care_home_role", ["admin", "member"]);
-
-export const gooseDbVersion = pgTable("goose_db_version", {
-  id: integer().primaryKey().generatedByDefaultAsIdentity({
-    name: "goose_db_version_id_seq",
-    startWith: 1,
-    increment: 1,
-    minValue: 1,
-    maxValue: 2147483647,
-    cache: 1,
-  }),
-  // You can use { mode: "bigint" } if numbers are exceeding js number limitations
-  versionId: bigint("version_id", { mode: "number" }).notNull(),
-  isApplied: boolean("is_applied").notNull(),
-  tstamp: timestamp({ mode: "string" }).defaultNow().notNull(),
-});
-
-export const seizureRecordShares = pgTable(
-  "seizure_record_shares",
-  {
-    id: uuid().defaultRandom().primaryKey().notNull(),
-    seizureRecordId: uuid("seizure_record_id"),
-    sharedBy: uuid("shared_by"),
-    recipientEmail: varchar("recipient_email"),
-    expiresAt: timestamp("expires_at", { mode: "string" }),
-    createdAt: timestamp("created_at", { mode: "string" })
-      .defaultNow()
-      .notNull(),
-    updatedAt: timestamp("updated_at", { mode: "string" })
-      .defaultNow()
-      .notNull(),
-  },
-  (table) => [
-    foreignKey({
-      columns: [table.seizureRecordId],
-      foreignColumns: [seizureRecords.id],
-      name: "seizure_record_shares_seizure_record_id_fkey",
-    }),
-    foreignKey({
-      columns: [table.sharedBy],
-      foreignColumns: [userProfiles.id],
-      name: "seizure_record_shares_shared_by_fkey",
-    }),
-  ],
-);
-
-export const userProfiles = pgTable("user_profiles", {
-  id: uuid().primaryKey().notNull(),
-  firstName: varchar("first_name"),
-  lastName: varchar("last_name"),
-  role: appRole().default("care_home_user").notNull(),
-  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
-});
-
-export const files = pgTable("files", {
-  id: uuid().defaultRandom().primaryKey().notNull(),
-  s3Key: varchar("s3_key"),
-  mimeType: varchar("mime_type"),
-  // You can use { mode: "bigint" } if numbers are exceeding js number limitations
-  sizeBytes: bigint("size_bytes", { mode: "number" }),
-  uploadedAt: timestamp("uploaded_at", { mode: "string" }),
-  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
-});
-
-export const careHome = pgTable("care_home", {
-  id: uuid().defaultRandom().primaryKey().notNull(),
-  name: varchar(),
-  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
-});
 
 export const patients = pgTable(
   "patients",
@@ -109,6 +39,82 @@ export const patients = pgTable(
       foreignColumns: [careHome.id],
       name: "patients_care_home_id_fkey",
     }),
+  ],
+);
+
+export const files = pgTable("files", {
+  id: uuid().defaultRandom().primaryKey().notNull(),
+  s3Key: varchar("s3_key"),
+  mimeType: varchar("mime_type"),
+  // You can use { mode: "bigint" } if numbers are exceeding js number limitations
+  sizeBytes: bigint("size_bytes", { mode: "number" }),
+  uploadedAt: timestamp("uploaded_at", { mode: "string" }),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
+});
+
+export const gooseDbVersion = pgTable("goose_db_version", {
+  id: integer()
+    .primaryKey()
+    .generatedByDefaultAsIdentity({
+      name: "goose_db_version_id_seq",
+      startWith: 1,
+      increment: 1,
+      minValue: 1,
+      maxValue: 2147483647,
+      cache: 1,
+    }),
+  // You can use { mode: "bigint" } if numbers are exceeding js number limitations
+  versionId: bigint("version_id", { mode: "number" }).notNull(),
+  isApplied: boolean("is_applied").notNull(),
+  tstamp: timestamp({ mode: "string" }).defaultNow().notNull(),
+});
+
+export const userProfiles = pgTable("user_profiles", {
+  id: uuid().primaryKey().notNull(),
+  firstName: varchar("first_name"),
+  lastName: varchar("last_name"),
+  role: appRole().default("care_home_user").notNull(),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
+});
+
+export const careHome = pgTable("care_home", {
+  id: uuid().defaultRandom().primaryKey().notNull(),
+  name: varchar(),
+  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
+  updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
+});
+
+export const careHomeMembers = pgTable(
+  "care_home_members",
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    userId: uuid("user_id").notNull(),
+    careHomeId: uuid("care_home_id").notNull(),
+    role: careHomeRole().default("member").notNull(),
+    createdAt: timestamp("created_at", { mode: "string" })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { mode: "string" })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.careHomeId],
+      foreignColumns: [careHome.id],
+      name: "care_home_members_care_home_id_fkey",
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [userProfiles.id],
+      name: "care_home_members_user_id_fkey",
+    }).onDelete("cascade"),
+    unique("care_home_members_user_id_care_home_id_key").on(
+      table.userId,
+      table.careHomeId,
+    ),
   ],
 );
 
@@ -149,34 +155,36 @@ export const seizureRecords = pgTable(
   ],
 );
 
-export const careHomeMembers = pgTable(
-  "care_home_members",
+export const seizureRecordShares = pgTable(
+  "seizure_record_shares",
   {
     id: uuid().defaultRandom().primaryKey().notNull(),
-    userId: uuid("user_id").notNull(),
-    careHomeId: uuid("care_home_id").notNull(),
-    role: careHomeRole().default("member").notNull(),
+    seizureRecordId: uuid("seizure_record_id"),
+    sharedBy: uuid("shared_by"),
+    recipientEmail: varchar("recipient_email"),
+    expiresAt: timestamp("expires_at", { mode: "string" }),
     createdAt: timestamp("created_at", { mode: "string" })
       .defaultNow()
       .notNull(),
     updatedAt: timestamp("updated_at", { mode: "string" })
       .defaultNow()
       .notNull(),
+    linkTokenHash: text("link_token_hash"),
+    otpHash: text("otp_hash"),
+    otpAttempts: integer("otp_attempts").default(0),
+    lastOtpSentAt: timestamp("last_otp_sent_at", { mode: "string" }),
+    accessedAt: timestamp("accessed_at", { mode: "string" }),
   },
   (table) => [
     foreignKey({
-      columns: [table.careHomeId],
-      foreignColumns: [careHome.id],
-      name: "care_home_members_care_home_id_fkey",
-    }).onDelete("cascade"),
+      columns: [table.seizureRecordId],
+      foreignColumns: [seizureRecords.id],
+      name: "seizure_record_shares_seizure_record_id_fkey",
+    }),
     foreignKey({
-      columns: [table.userId],
+      columns: [table.sharedBy],
       foreignColumns: [userProfiles.id],
-      name: "care_home_members_user_id_fkey",
-    }).onDelete("cascade"),
-    unique("care_home_members_user_id_care_home_id_key").on(
-      table.userId,
-      table.careHomeId,
-    ),
+      name: "seizure_record_shares_shared_by_fkey",
+    }),
   ],
 );

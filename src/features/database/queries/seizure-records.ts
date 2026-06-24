@@ -83,6 +83,7 @@ export async function getSeizureRecordWithDetails(
     .select({
       seizureRecord: schema.seizureRecords,
       patient: schema.patients,
+      careHome: schema.careHome,
       recorder: schema.userProfiles,
       file: schema.files,
     })
@@ -90,6 +91,10 @@ export async function getSeizureRecordWithDetails(
     .innerJoin(
       schema.patients,
       eq(schema.seizureRecords.patientId, schema.patients.id),
+    )
+    .innerJoin(
+      schema.careHome,
+      eq(schema.patients.careHomeId, schema.careHome.id),
     )
     .leftJoin(
       schema.userProfiles,

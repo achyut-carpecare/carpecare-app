@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Download, Mail } from "lucide-react";
 import { eq } from "drizzle-orm";
 import { Button } from "@/components/ui/button";
@@ -11,21 +11,23 @@ import {
   formatDuration,
   formatName,
 } from "@/features/dashboard/lib/format";
+import { compareTokenHash } from "@/features/email";
+import { getSeizureRecordShareById } from "@/features/database/queries";
+import { isShareSessionValid } from "./actions";
 
 interface SharePageProps {
   params: Promise<{ shareId: string }>;
+  searchParams: Promise<{ token?: string }>;
 }
 
-export default async function SharePage({ params }: SharePageProps) {
+export default async function SharePage({
+  params,
+  searchParams,
+}: SharePageProps) {
   const { shareId } = await params;
+  const { token } = await searchParams;
 
-  const share = await db
-    .select()
-    .from(schema.seizureRecordShares)
-    .where(eq(schema.seizureRecordShares.id, shareId))
-    .limit(1)
-    .then((rows) => rows[0]);
-
+  const share = await getSeizureRecordShareById(db, shareId);
   if (!share) {
     notFound();
   }
@@ -44,6 +46,46 @@ export default async function SharePage({ params }: SharePageProps) {
         </Card>
       </div>
     );
+  }
+
+  const hasValidSession = await isShareSessionValid(shareId);
+
+  if (!hasValidSession) {
+    if (!token || !share.linkTokenHash) {
+      return (
+        <div className="min-h-screen flex items-center justify-center p-6">
+          <Card className="max-w-md w-full rounded-2xl">
+            <CardContent className="p-8 text-center">
+              <h1 className="text-xl font-bold mb-2">Invalid link</h1>
+              <p className="text-muted-foreground">
+                This share link is missing a required access token. Please
+                request a new link from the care home.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+
+    if (!compareTokenHash(token, share.linkTokenHash)) {
+      return (
+        <div className="min-h-screen flex items-center justify-center p-6">
+          <Card className="max-w-md w-full rounded-2xl">
+            <CardContent className="p-8 text-center">
+              <h1 className="text-xl font-bold mb-2">Invalid link</h1>
+              <p className="text-muted-foreground">
+                This share link is invalid or has been revoked. Please contact
+                the care home for a new link.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+
+    // Token is valid but no session yet. Redirect to the client-only verify
+    // page so the user can request and enter the OTP without hydration issues.
+    redirect(`/share/${shareId}/verify?token=${encodeURIComponent(token)}`);
   }
 
   const recordWithDetails = await db
