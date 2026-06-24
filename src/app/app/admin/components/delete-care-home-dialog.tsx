@@ -13,7 +13,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { deleteCareHomeAction } from "../lib/actions";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/sonner";
 
 interface DeleteCareHomeDialogProps {
   careHome: { id: string; name: string | null };

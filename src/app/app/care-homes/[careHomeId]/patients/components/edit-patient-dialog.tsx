@@ -16,7 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { updatePatientAction } from "../lib/actions";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/sonner";
 
 interface EditPatientDialogProps {
   careHomeId: string;

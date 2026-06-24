@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { VideoTrimmerUI } from "@/components/video-trimmer";
 import { useVideoTrimmer } from "@/components/video-trimmer/lib/use-video-trimmer";
 import { createSeizureRecordAction } from "./lib/actions";
-import { toast } from "sonner";
+import { toast } from "@/components/ui/sonner";
 
 interface NewSeizureRecordPageProps {
   params: Promise<{ careHomeId: string; patientId: string }>;
