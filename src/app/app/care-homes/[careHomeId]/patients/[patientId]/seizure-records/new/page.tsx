@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight, Check, FileText, Scissors } from "lucide-react";
@@ -25,7 +25,6 @@ export default function NewSeizureRecordPage({
   const router = useRouter();
 
   const trimmer = useVideoTrimmer();
-  const [mounted, setMounted] = useState(false);
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
@@ -34,10 +33,6 @@ export default function NewSeizureRecordPage({
     seizureType: "",
     notes: "",
   });
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   function updateField<K extends keyof typeof formData>(
     field: K,
@@ -96,7 +91,7 @@ export default function NewSeizureRecordPage({
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {mounted ? (
+            {trimmer.status !== "idle" ? (
               <VideoTrimmerUI
                 videoRef={trimmer.videoRef}
                 timelineRef={trimmer.timelineRef}
@@ -130,7 +125,7 @@ export default function NewSeizureRecordPage({
               <Button
                 onClick={() => setStep(2)}
                 disabled={
-                  !mounted ||
+                  !trimmer.videoRef.current ||
                   (trimmer.status !== "ready" && trimmer.status !== "preview")
                 }
                 className="rounded-xl"

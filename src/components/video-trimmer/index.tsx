@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, type RefObject } from "react";
+import { useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { formatTime } from "./lib/format-time";
 import type { TrimmerStatus } from "./lib/use-video-trimmer";

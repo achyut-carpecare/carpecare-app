@@ -12,22 +12,19 @@ import {
   unique,
   pgEnum,
 } from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
 
 export const appRole = pgEnum("app_role", ["system_admin", "care_home_user"]);
 export const careHomeRole = pgEnum("care_home_role", ["admin", "member"]);
 
 export const gooseDbVersion = pgTable("goose_db_version", {
-  id: integer()
-    .primaryKey()
-    .generatedByDefaultAsIdentity({
-      name: "goose_db_version_id_seq",
-      startWith: 1,
-      increment: 1,
-      minValue: 1,
-      maxValue: 2147483647,
-      cache: 1,
-    }),
+  id: integer().primaryKey().generatedByDefaultAsIdentity({
+    name: "goose_db_version_id_seq",
+    startWith: 1,
+    increment: 1,
+    minValue: 1,
+    maxValue: 2147483647,
+    cache: 1,
+  }),
   // You can use { mode: "bigint" } if numbers are exceeding js number limitations
   versionId: bigint("version_id", { mode: "number" }).notNull(),
   isApplied: boolean("is_applied").notNull(),

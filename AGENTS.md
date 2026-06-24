@@ -79,6 +79,7 @@ Husky + lint-staged runs `prettier --write --ignore-unknown` on all staged files
   - `middleware.ts` — session refresh middleware (used in route handlers/middleware, not Next.js root middleware)
 - **Database connection**: `src/features/database/index.ts` — Drizzle + postgres-js client
 - **shadcn/ui components**: `src/components/ui/` (currently `button`, `card`)
+- **Global hooks**: `src/hooks/` — only for cross-cutting, app-wide React hooks. Feature-specific hooks stay in `src/features/{feature}/hooks.ts`.
 - **Styling**: `src/app/globals.css` — Tailwind v4 theme with `@theme inline` and oklch color vars
 - **No `src/db/schema.ts` yet** — `drizzle.config.ts` references it but file doesn't exist. Create it when adding tables.
 
@@ -130,7 +131,7 @@ No test framework configured currently. If adding tests, Jest or Vitest are comm
 
 - **Next.js 16**: App Router APIs differ from training data. Check `node_modules/next/dist/docs/` for current conventions.
 - **No tests**: Don't try to run `bun test` — it won't work.
-- **No schema file**: Drizzle is configured but schema is empty. Must create `src/db/schema.ts` before generating migrations.
+- **No `src/db/schema.ts`**: Drizzle config now points to `src/features/database/schema.ts`; no `src/db/schema.ts` is needed.
 - **Middleware location**: Supabase auth middleware is in `src/features/auth/middleware.ts`, not `src/middleware.ts`. Next.js won't auto-run it.
 - **Prettier on commit**: Only formatting, no lint or typecheck on pre-commit.
 - **.env not in git**: Secrets are local-only.

@@ -54,10 +54,6 @@ export default async function AdminDashboardPage() {
     (sum, h) => sum + h.memberCount,
     0,
   );
-  const totalEvents = careHomesWithCounts.reduce(
-    (sum, h) => sum + h.eventsThisMonth,
-    0,
-  );
 
   return (
     <div className="space-y-6">

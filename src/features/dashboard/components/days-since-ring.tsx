@@ -8,7 +8,6 @@ interface DaysSinceRingProps {
 export function DaysSinceRing({ days, className }: DaysSinceRingProps) {
   const isToday = days === 0;
   const isWatch = days !== null && days > 0 && days <= 3;
-  const isStable = days === null || days > 3;
 
   const color = isToday ? "#ef4444" : isWatch ? "#f59e0b" : "#22c55e";
 

@@ -20,7 +20,7 @@ import { DaysSinceRing } from "@/features/dashboard/components/days-since-ring";
 import { DotCalendar } from "@/features/dashboard/components/dot-calendar";
 import { SparseTimeline } from "@/features/dashboard/components/sparse-timeline";
 import { formatDate, formatDuration } from "@/features/dashboard/lib/format";
-import { daysSince, formatName, patientStatus } from "../lib/helpers";
+import { daysSince, formatName } from "../lib/helpers";
 import { EditPatientDialog } from "../components/edit-patient-dialog";
 
 interface PatientDetailPageProps {
@@ -70,7 +70,6 @@ export default async function PatientDetailPage({
   ]);
 
   const ds = daysSince(stats.lastRecordedAt);
-  const status = patientStatus(ds);
 
   return (
     <div className="space-y-6">

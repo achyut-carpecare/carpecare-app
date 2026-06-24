@@ -1,4 +1,4 @@
-import { and, eq, gte, max, sql } from "drizzle-orm";
+import { and, eq, max, sql } from "drizzle-orm";
 import { schema, type DB } from "..";
 import type { DBInsertTables, DBTables, DBUpdateTables } from "../types";
 
