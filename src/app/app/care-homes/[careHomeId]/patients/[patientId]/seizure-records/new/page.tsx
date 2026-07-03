@@ -133,7 +133,17 @@ export default function NewSeizureRecordPage({
           </CardHeader>
           <CardContent className="space-y-4">
             <VideoTrimmer onTrimComplete={handleTrimComplete} />
-            <div className="flex justify-end">
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setTrimmedFile(null);
+                  setStep(2);
+                }}
+                className="rounded-xl"
+              >
+                Continue without video
+              </Button>
               <Button
                 onClick={() => setStep(2)}
                 disabled={!trimmedFile}
