@@ -1,6 +1,6 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { schema, type DB } from "..";
-import type { DBInsertTables, DBTables } from "../types";
+import type { DBEnums, DBInsertTables, DBTables } from "../types";
 
 export async function getCareHomeMembers(
   db: DB,
@@ -21,6 +21,46 @@ export async function getCareHomeMembers(
     .offset(offset ?? 0);
 }
 
+export async function getCareHomeMembersWithProfiles(
+  db: DB,
+  careHomeId: string,
+): Promise<
+  {
+    member: DBTables["careHomeMembers"];
+    profile: DBTables["userProfiles"];
+  }[]
+> {
+  return await db
+    .select({
+      member: schema.careHomeMembers,
+      profile: schema.userProfiles,
+    })
+    .from(schema.careHomeMembers)
+    .innerJoin(
+      schema.userProfiles,
+      eq(schema.careHomeMembers.userId, schema.userProfiles.id),
+    )
+    .where(eq(schema.careHomeMembers.careHomeId, careHomeId))
+    .orderBy(schema.userProfiles.lastName, schema.userProfiles.firstName);
+}
+
+export async function getCareHomeMemberByUserIdAndCareHomeId(
+  db: DB,
+  userId: string,
+  careHomeId: string,
+): Promise<DBTables["careHomeMembers"] | undefined> {
+  const [member] = await db
+    .select()
+    .from(schema.careHomeMembers)
+    .where(
+      and(
+        eq(schema.careHomeMembers.userId, userId),
+        eq(schema.careHomeMembers.careHomeId, careHomeId),
+      ),
+    );
+  return member;
+}
+
 export async function getCareHomeMemberById(
   db: DB,
   id: string,
@@ -30,6 +70,19 @@ export async function getCareHomeMemberById(
     .from(schema.careHomeMembers)
     .where(eq(schema.careHomeMembers.id, id));
   return member;
+}
+
+export async function updateCareHomeMemberRole(
+  db: DB,
+  id: string,
+  role: DBEnums["careHomeRole"],
+): Promise<DBTables["careHomeMembers"] | undefined> {
+  const [updatedMember] = await db
+    .update(schema.careHomeMembers)
+    .set({ role, updatedAt: new Date().toISOString() })
+    .where(eq(schema.careHomeMembers.id, id))
+    .returning();
+  return updatedMember;
 }
 
 export async function getCareHomeIdForUser(

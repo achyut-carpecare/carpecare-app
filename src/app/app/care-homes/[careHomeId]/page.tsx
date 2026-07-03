@@ -78,7 +78,7 @@ export default async function CareHomeDashboardPage({
         actions={
           <>
             <Button asChild variant="secondary" className="rounded-xl">
-              <Link href={`/app/care-homes/${careHomeId}/patients/new`}>
+              <Link href={`/app/care-homes/${careHomeId}/patients`}>
                 <Plus className="w-4 h-4 mr-2" />
                 Add resident
               </Link>
@@ -104,6 +104,7 @@ export default async function CareHomeDashboardPage({
           icon={Building2}
           label="Team members"
           value={counts.memberCount}
+          href={`/app/care-homes/${careHomeId}/members`}
         />
         <StatCard
           icon={Activity}

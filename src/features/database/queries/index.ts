@@ -2,6 +2,7 @@ export * from "./care-home";
 export * from "./care-home-members";
 export * from "./dashboard";
 export * from "./files";
+export * from "./invitations";
 export * from "./patient-detail";
 export * from "./patients";
 export * from "./seizure-record-shares";

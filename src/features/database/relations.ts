@@ -2,11 +2,12 @@ import { relations } from "drizzle-orm/relations";
 import {
   careHome,
   patients,
-  careHomeMembers,
-  userProfiles,
   seizureRecords,
+  userProfiles,
   files,
   seizureRecordShares,
+  careHomeMembers,
+  careHomeInvitations,
 } from "./schema";
 
 export const patientsRelations = relations(patients, ({ one, many }) => ({
@@ -20,26 +21,7 @@ export const patientsRelations = relations(patients, ({ one, many }) => ({
 export const careHomeRelations = relations(careHome, ({ many }) => ({
   patients: many(patients),
   careHomeMembers: many(careHomeMembers),
-}));
-
-export const careHomeMembersRelations = relations(
-  careHomeMembers,
-  ({ one }) => ({
-    careHome: one(careHome, {
-      fields: [careHomeMembers.careHomeId],
-      references: [careHome.id],
-    }),
-    userProfile: one(userProfiles, {
-      fields: [careHomeMembers.userId],
-      references: [userProfiles.id],
-    }),
-  }),
-);
-
-export const userProfilesRelations = relations(userProfiles, ({ many }) => ({
-  careHomeMembers: many(careHomeMembers),
-  seizureRecords: many(seizureRecords),
-  seizureRecordShares: many(seizureRecordShares),
+  careHomeInvitations: many(careHomeInvitations),
 }));
 
 export const seizureRecordsRelations = relations(
@@ -61,6 +43,18 @@ export const seizureRecordsRelations = relations(
   }),
 );
 
+export const userProfilesRelations = relations(userProfiles, ({ many }) => ({
+  seizureRecords: many(seizureRecords),
+  seizureRecordShares: many(seizureRecordShares),
+  careHomeMembers: many(careHomeMembers),
+  careHomeInvitations_acceptedBy: many(careHomeInvitations, {
+    relationName: "careHomeInvitations_acceptedBy_userProfiles_id",
+  }),
+  careHomeInvitations_invitedBy: many(careHomeInvitations, {
+    relationName: "careHomeInvitations_invitedBy_userProfiles_id",
+  }),
+}));
+
 export const filesRelations = relations(files, ({ many }) => ({
   seizureRecords: many(seizureRecords),
 }));
@@ -75,6 +69,40 @@ export const seizureRecordSharesRelations = relations(
     userProfile: one(userProfiles, {
       fields: [seizureRecordShares.sharedBy],
       references: [userProfiles.id],
+    }),
+  }),
+);
+
+export const careHomeMembersRelations = relations(
+  careHomeMembers,
+  ({ one }) => ({
+    careHome: one(careHome, {
+      fields: [careHomeMembers.careHomeId],
+      references: [careHome.id],
+    }),
+    userProfile: one(userProfiles, {
+      fields: [careHomeMembers.userId],
+      references: [userProfiles.id],
+    }),
+  }),
+);
+
+export const careHomeInvitationsRelations = relations(
+  careHomeInvitations,
+  ({ one }) => ({
+    userProfile_acceptedBy: one(userProfiles, {
+      fields: [careHomeInvitations.acceptedBy],
+      references: [userProfiles.id],
+      relationName: "careHomeInvitations_acceptedBy_userProfiles_id",
+    }),
+    careHome: one(careHome, {
+      fields: [careHomeInvitations.careHomeId],
+      references: [careHome.id],
+    }),
+    userProfile_invitedBy: one(userProfiles, {
+      fields: [careHomeInvitations.invitedBy],
+      references: [userProfiles.id],
+      relationName: "careHomeInvitations_invitedBy_userProfiles_id",
     }),
   }),
 );

@@ -24,9 +24,10 @@ export const brand = {
 interface BaseEmailProps {
   preview: string;
   children: ReactNode;
+  footer?: string;
 }
 
-export function BaseEmail({ preview, children }: BaseEmailProps) {
+export function BaseEmail({ preview, children, footer }: BaseEmailProps) {
   return (
     <Html>
       <Head />
@@ -39,8 +40,8 @@ export function BaseEmail({ preview, children }: BaseEmailProps) {
           <Section style={contentSection}>{children}</Section>
           <Section style={footerSection}>
             <Text style={footerText}>
-              Sent by Carpe Care · You&apos;re receiving this because a care
-              home shared a seizure record with you.
+              {footer ??
+                "Sent by Carpe Care · You're receiving this because a care home shared a seizure record with you."}
             </Text>
           </Section>
         </Container>

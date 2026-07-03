@@ -10,6 +10,7 @@ import {
   LogOut,
   Menu,
   Users,
+  UserCog,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -26,6 +27,7 @@ interface AppShellProps {
   userEmail?: string | null;
   userRole: "system_admin" | "care_home_user";
   careHomes: CareHome[];
+  adminCareHomeIds?: string[];
   children: React.ReactNode;
 }
 
@@ -50,6 +52,12 @@ const navItems: NavItem[] = [
     adminOnly: false,
   },
   {
+    name: "Members",
+    href: "/members",
+    icon: UserCog,
+    adminOnly: false,
+  },
+  {
     name: "Care homes",
     href: "/app/admin",
     icon: Building2,
@@ -61,6 +69,7 @@ export function AppShell({
   userEmail,
   userRole,
   careHomes,
+  adminCareHomeIds = [],
   children,
 }: AppShellProps) {
   const pathname = usePathname();
@@ -68,13 +77,22 @@ export function AppShell({
 
   const isAdminView = pathname.startsWith("/app/admin");
   const effectiveRole = isAdminView ? "system_admin" : userRole;
-  const visibleNav = navItems.filter((item) => {
-    if (item.adminOnly) return effectiveRole === "system_admin";
-    return effectiveRole !== "system_admin";
-  });
 
   const careHomeMatch = pathname.match(/\/app\/care-homes\/([^\/]+)/);
   const currentCareHomeId = careHomeMatch?.[1] ?? careHomes[0]?.id;
+
+  const visibleNav = navItems.filter((item) => {
+    if (item.adminOnly) return effectiveRole === "system_admin";
+    if (item.href === "/members") {
+      return (
+        effectiveRole === "system_admin" ||
+        (currentCareHomeId
+          ? adminCareHomeIds.includes(currentCareHomeId)
+          : false)
+      );
+    }
+    return effectiveRole !== "system_admin";
+  });
 
   function resolveHref(item: NavItem) {
     if (item.href === "/app") {
@@ -84,6 +102,9 @@ export function AppShell({
     }
     if (item.href === "/patients" && currentCareHomeId) {
       return `/app/care-homes/${currentCareHomeId}/patients`;
+    }
+    if (item.href === "/members" && currentCareHomeId) {
+      return `/app/care-homes/${currentCareHomeId}/members`;
     }
     return item.href;
   }

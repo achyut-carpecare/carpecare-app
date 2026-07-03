@@ -2,6 +2,7 @@ import { render } from "@react-email/components";
 import { transporter, DEFAULT_FROM } from "./transporter";
 import { ShareLinkEmail } from "./templates/share-link";
 import { ShareOtpEmail } from "./templates/share-otp";
+import { InvitationEmail } from "./templates/invite-link";
 
 export * from "./lib/crypto";
 
@@ -56,5 +57,35 @@ export async function sendShareOtpEmail({
   });
 
   console.log("Share OTP email sent:", info.messageId, "to:", to);
+  return info;
+}
+
+export async function sendInvitationEmail({
+  to,
+  careHomeName,
+  inviterName,
+  role,
+  inviteUrl,
+  expiresAt,
+}: {
+  to: string;
+  careHomeName: string;
+  inviterName: string;
+  role: string;
+  inviteUrl: string;
+  expiresAt: string;
+}) {
+  const html = await render(
+    InvitationEmail({ careHomeName, inviterName, role, inviteUrl, expiresAt }),
+  );
+
+  const info = await transporter.sendMail({
+    from: DEFAULT_FROM,
+    to,
+    subject: `You're invited to join ${careHomeName} on Carpe Care`,
+    html,
+  });
+
+  console.log("Invitation email sent:", info.messageId, "to:", to);
   return info;
 }

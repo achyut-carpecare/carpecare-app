@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { signIn } from "@/features/auth/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,8 @@ import {
 } from "@/components/ui/card";
 
 export default function LoginPage() {
+  const searchParams = useSearchParams();
+  const redirectTo = searchParams.get("redirect") ?? "/app";
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
 
@@ -25,7 +28,7 @@ export default function LoginPage() {
       setError(result.error);
       setPending(false);
     }
-    // On success, the server action redirects to /app
+    // On success, the server action redirects.
   }
 
   return (
@@ -37,6 +40,7 @@ export default function LoginPage() {
         </CardHeader>
         <CardContent>
           <form action={handleSubmit} className="space-y-4">
+            <input type="hidden" name="redirect" value={redirectTo} />
             <div className="space-y-2">
               <p className="text-sm font-medium">Email</p>
               <Input

@@ -26,12 +26,16 @@ export default async function AppLayout({
 
   const { profile, memberships } = result;
   const careHomes = memberships.map((m) => m.careHome);
+  const adminCareHomeIds = memberships
+    .filter((m) => m.role === "admin")
+    .map((m) => m.careHome.id);
 
   return (
     <AppShell
       userEmail={user.email}
       userRole={profile.role}
       careHomes={careHomes}
+      adminCareHomeIds={adminCareHomeIds}
     >
       {children}
     </AppShell>

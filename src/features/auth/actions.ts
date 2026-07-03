@@ -7,6 +7,11 @@ import { createClient } from "./server";
 export async function signIn(formData: FormData) {
   const email = formData.get("email") as string;
   const password = formData.get("password") as string;
+  const redirectTo = (formData.get("redirect") as string) || "/app";
+  const safeRedirect =
+    redirectTo.startsWith("/") && !redirectTo.startsWith("//")
+      ? redirectTo
+      : "/app";
 
   if (!email || !password) {
     return { error: "Email and password are required" };
@@ -28,12 +33,16 @@ export async function signIn(formData: FormData) {
   }
 
   revalidatePath("/", "layout");
-  redirect("/app");
+  redirect(safeRedirect);
 }
 
-export async function signOut() {
+export async function signOut(redirectTo?: string) {
   const supabase = await createClient();
   await supabase.auth.signOut();
   revalidatePath("/", "layout");
-  redirect("/");
+  const safeRedirect =
+    redirectTo?.startsWith("/") && !redirectTo.startsWith("//")
+      ? redirectTo
+      : "/";
+  redirect(safeRedirect);
 }
