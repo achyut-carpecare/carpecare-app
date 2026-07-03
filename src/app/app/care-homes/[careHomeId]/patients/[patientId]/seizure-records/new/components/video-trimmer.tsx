@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile } from "@ffmpeg/util";
+import { createFile } from "mp4box";
 import {
   Play,
   Pause,
@@ -15,6 +16,10 @@ import { Button } from "@/components/ui/button";
 
 const THUMBNAIL_COUNT = 20;
 
+// NOTE: MP4/QuickTime stores timestamps as seconds since 1904-01-01, while JS Date
+// uses milliseconds since the Unix epoch (1970-01-01). This offset bridges the two.
+const MP4_EPOCH_OFFSET_SECONDS = 2082844800;
+
 type Status =
   | "idle"
   | "loading-ffmpeg"
@@ -24,7 +29,12 @@ type Status =
   | "error";
 
 interface VideoTrimmerProps {
-  onTrimComplete?: (file: File, durationSeconds: number) => void;
+  onTrimComplete?: (
+    file: File,
+    durationSeconds: number,
+    videoStartDate: Date | null,
+    trimStartSeconds: number,
+  ) => void;
 }
 
 function formatTimeForFfmpeg(seconds: number) {
@@ -45,6 +55,54 @@ function formatTime(seconds: number) {
   return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
+async function extractMp4CreationTime(file: File): Promise<Date | null> {
+  return new Promise((resolve) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const buffer = reader.result as ArrayBuffer;
+      (buffer as unknown as { fileStart: number }).fileStart = 0;
+
+      const mp4boxFile = createFile();
+      let resolved = false;
+
+      mp4boxFile.onReady = (info) => {
+        if (resolved) return;
+        resolved = true;
+
+        const mvhd = info.mvhd ?? info.mvhds?.[0];
+        if (!mvhd?.creation_time) {
+          resolve(null);
+          return;
+        }
+
+        const unixSeconds =
+          Number(mvhd.creation_time) - MP4_EPOCH_OFFSET_SECONDS;
+        resolve(new Date(unixSeconds * 1000));
+      };
+
+      mp4boxFile.onError = () => {
+        if (!resolved) {
+          resolved = true;
+          resolve(null);
+        }
+      };
+
+      try {
+        mp4boxFile.appendBuffer(buffer);
+        mp4boxFile.flush();
+      } catch {
+        if (!resolved) {
+          resolved = true;
+          resolve(null);
+        }
+      }
+    };
+
+    reader.onerror = () => resolve(null);
+    reader.readAsArrayBuffer(file);
+  });
+}
+
 export function VideoTrimmer({ onTrimComplete }: VideoTrimmerProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const timelineRef = useRef<HTMLDivElement | null>(null);
@@ -63,6 +121,7 @@ export function VideoTrimmer({ onTrimComplete }: VideoTrimmerProps) {
   const [endTime, setEndTime] = useState(0);
   const [thumbnails, setThumbnails] = useState<string[]>([]);
   const [trimmedUrl, setTrimmedUrl] = useState<string>("");
+  const [videoStartDate, setVideoStartDate] = useState<Date | null>(null);
 
   // Load FFmpeg once.
   const loadFfmpeg = useCallback(async () => {
@@ -120,6 +179,7 @@ export function VideoTrimmer({ onTrimComplete }: VideoTrimmerProps) {
     setEndTime(0);
     setThumbnails([]);
     setTrimmedUrl("");
+    setVideoStartDate(null);
     setError("");
     setStatus("idle");
   }, [videoUrl, trimmedUrl]);
@@ -151,9 +211,14 @@ export function VideoTrimmer({ onTrimComplete }: VideoTrimmerProps) {
       setDuration(dur);
       setStartTime(0);
       setEndTime(dur);
-      setStatus("ready");
 
-      await generateThumbnails(video, dur);
+      const [startDate] = await Promise.all([
+        extractMp4CreationTime(file),
+        generateThumbnails(video, dur),
+      ]);
+      setVideoStartDate(startDate);
+
+      setStatus("ready");
       video.remove();
     },
     [loadFfmpeg, generateThumbnails],
@@ -271,7 +336,12 @@ export function VideoTrimmer({ onTrimComplete }: VideoTrimmerProps) {
         const trimmedFile = new File([blob], "trimmed-video.mp4", {
           type: "video/mp4",
         });
-        onTrimComplete(trimmedFile, endTime - startTime);
+        onTrimComplete(
+          trimmedFile,
+          endTime - startTime,
+          videoStartDate,
+          startTime,
+        );
       }
 
       await ffmpeg.deleteFile(inputName);
@@ -281,7 +351,15 @@ export function VideoTrimmer({ onTrimComplete }: VideoTrimmerProps) {
       setError(err instanceof Error ? err.message : "Failed to trim video");
       setStatus("error");
     }
-  }, [videoFile, duration, startTime, endTime, trimmedUrl, onTrimComplete]);
+  }, [
+    videoFile,
+    duration,
+    startTime,
+    endTime,
+    trimmedUrl,
+    videoStartDate,
+    onTrimComplete,
+  ]);
 
   const handleBackToEditor = useCallback(() => {
     if (trimmedUrl) URL.revokeObjectURL(trimmedUrl);

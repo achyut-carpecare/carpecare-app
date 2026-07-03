@@ -22,6 +22,16 @@ import { createSeizureRecordAction } from "./lib/actions";
 import { uploadVideoFile } from "@/features/storage/actions";
 import { toast } from "@/components/ui/sonner";
 
+function toLocalDateTimeInputValue(date: Date): string {
+  const pad = (n: number) => n.toString().padStart(2, "0");
+  const year = date.getFullYear();
+  const month = pad(date.getMonth() + 1);
+  const day = pad(date.getDate());
+  const hours = pad(date.getHours());
+  const minutes = pad(date.getMinutes());
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+}
+
 interface NewSeizureRecordPageProps {
   params: Promise<{ careHomeId: string; patientId: string }>;
 }
@@ -37,7 +47,7 @@ export default function NewSeizureRecordPage({
   const [trimmedFile, setTrimmedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [formData, setFormData] = useState({
-    recordedAt: new Date().toISOString().slice(0, 16),
+    recordedAt: toLocalDateTimeInputValue(new Date()),
     durationSeconds: "",
     seizureType: "",
     seizureTypeOther: "",
@@ -56,11 +66,22 @@ export default function NewSeizureRecordPage({
     setFormData((prev) => ({ ...prev, [field]: value }));
   }
 
-  function handleTrimComplete(file: File, durationSeconds: number) {
+  function handleTrimComplete(
+    file: File,
+    durationSeconds: number,
+    videoStartDate: Date | null,
+    trimStartSeconds: number,
+  ) {
     setTrimmedFile(file);
     setFormData((prev) => ({
       ...prev,
       durationSeconds: Math.max(1, Math.round(durationSeconds)).toString(),
+      recordedAt:
+        videoStartDate != null
+          ? toLocalDateTimeInputValue(
+              new Date(videoStartDate.getTime() + trimStartSeconds * 1000),
+            )
+          : prev.recordedAt,
     }));
     toast.success("Video trimmed and ready");
   }
