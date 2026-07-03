@@ -24,7 +24,7 @@ type Status =
   | "error";
 
 interface VideoTrimmerProps {
-  onTrimComplete?: (file: File) => void;
+  onTrimComplete?: (file: File, durationSeconds: number) => void;
 }
 
 function formatTimeForFfmpeg(seconds: number) {
@@ -271,7 +271,7 @@ export function VideoTrimmer({ onTrimComplete }: VideoTrimmerProps) {
         const trimmedFile = new File([blob], "trimmed-video.mp4", {
           type: "video/mp4",
         });
-        onTrimComplete(trimmedFile);
+        onTrimComplete(trimmedFile, endTime - startTime);
       }
 
       await ffmpeg.deleteFile(inputName);

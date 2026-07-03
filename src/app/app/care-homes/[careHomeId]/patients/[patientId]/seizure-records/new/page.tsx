@@ -56,8 +56,12 @@ export default function NewSeizureRecordPage({
     setFormData((prev) => ({ ...prev, [field]: value }));
   }
 
-  function handleTrimComplete(file: File) {
+  function handleTrimComplete(file: File, durationSeconds: number) {
     setTrimmedFile(file);
+    setFormData((prev) => ({
+      ...prev,
+      durationSeconds: Math.max(1, Math.round(durationSeconds)).toString(),
+    }));
     toast.success("Video trimmed and ready");
   }
 
