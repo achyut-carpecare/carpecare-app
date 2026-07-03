@@ -24,6 +24,10 @@ export async function createSeizureRecordAction({
       return { error: "Date/time and a positive duration are required" };
     }
 
+    if (!seizureType?.trim()) {
+      return { error: "Seizure type is required" };
+    }
+
     const record = await createSeizureRecord(db, {
       patientId,
       recordedAt,

@@ -9,7 +9,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { VideoTrimmer } from "./components/video-trimmer";
+import { SEIZURE_TYPES } from "@/features/seizure-records/constants";
 import { createSeizureRecordAction } from "./lib/actions";
 import { uploadVideoFile } from "@/features/storage/actions";
 import { toast } from "@/components/ui/sonner";
@@ -32,8 +40,14 @@ export default function NewSeizureRecordPage({
     recordedAt: new Date().toISOString().slice(0, 16),
     durationSeconds: "",
     seizureType: "",
+    seizureTypeOther: "",
     notes: "",
   });
+
+  const resolvedSeizureType =
+    formData.seizureType === "Other"
+      ? formData.seizureTypeOther.trim()
+      : formData.seizureType;
 
   function updateField<K extends keyof typeof formData>(
     field: K,
@@ -74,7 +88,7 @@ export default function NewSeizureRecordPage({
       patientId,
       recordedAt: new Date(formData.recordedAt).toISOString(),
       durationSeconds: Number(formData.durationSeconds),
-      seizureType: formData.seizureType,
+      seizureType: resolvedSeizureType,
       notes: formData.notes,
       videoId,
     });
@@ -170,14 +184,36 @@ export default function NewSeizureRecordPage({
             </div>
             <div className="space-y-2">
               <Label htmlFor="type">Seizure type</Label>
-              <Input
-                id="type"
+              <Select
                 value={formData.seizureType}
-                onChange={(e) => updateField("seizureType", e.target.value)}
-                placeholder="e.g. Tonic-clonic"
-                className="rounded-xl"
-              />
+                onValueChange={(value) => updateField("seizureType", value)}
+              >
+                <SelectTrigger id="type" className="w-full rounded-xl">
+                  <SelectValue placeholder="Select a seizure type" />
+                </SelectTrigger>
+                <SelectContent className="rounded-2xl">
+                  {SEIZURE_TYPES.map((type) => (
+                    <SelectItem key={type} value={type} className="rounded-xl">
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
+            {formData.seizureType === "Other" && (
+              <div className="space-y-2">
+                <Label htmlFor="typeOther">Other seizure type</Label>
+                <Input
+                  id="typeOther"
+                  value={formData.seizureTypeOther}
+                  onChange={(e) =>
+                    updateField("seizureTypeOther", e.target.value)
+                  }
+                  placeholder="Describe the seizure type"
+                  className="rounded-xl"
+                />
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="notes">Notes</Label>
               <Textarea
@@ -196,7 +232,11 @@ export default function NewSeizureRecordPage({
               >
                 Back
               </Button>
-              <Button onClick={() => setStep(3)} className="rounded-xl">
+              <Button
+                onClick={() => setStep(3)}
+                disabled={!resolvedSeizureType}
+                className="rounded-xl"
+              >
                 Review
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Button>
@@ -227,7 +267,7 @@ export default function NewSeizureRecordPage({
               </div>
               <div>
                 <span className="font-semibold">Type:</span>{" "}
-                {formData.seizureType || "—"}
+                {resolvedSeizureType || "—"}
               </div>
               <div>
                 <span className="font-semibold">Notes:</span>{" "}
