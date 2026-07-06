@@ -19,6 +19,7 @@ import {
 import { PageHeader } from "@/features/dashboard/components/page-header";
 import { InviteUserDialog } from "./components/invite-user-dialog";
 import { DeleteUserButton } from "./components/delete-user-button";
+import { AdminStatusSwitch } from "./components/admin-status-switch";
 
 export default async function AdminUsersPage() {
   const supabase = await createClient();
@@ -60,6 +61,7 @@ export default async function AdminUsersPage() {
               <TableRow>
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
+                <TableHead>System admin</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -67,7 +69,7 @@ export default async function AdminUsersPage() {
               {profiles.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={3}
+                    colSpan={4}
                     className="text-center text-muted-foreground"
                   >
                     No users found.
@@ -87,6 +89,13 @@ export default async function AdminUsersPage() {
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {email ?? "—"}
+                    </TableCell>
+                    <TableCell>
+                      <AdminStatusSwitch
+                        userId={profile.id}
+                        isAdmin={profile.isSystemAdmin}
+                        disabled={isCurrentUser}
+                      />
                     </TableCell>
                     <TableCell className="text-right">
                       <DeleteUserButton
