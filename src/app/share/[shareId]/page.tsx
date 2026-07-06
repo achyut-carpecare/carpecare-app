@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { Download, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
 import { eq } from "drizzle-orm";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,6 +13,7 @@ import {
 } from "@/features/dashboard/lib/format";
 import { compareTokenHash } from "@/features/email";
 import { getSeizureRecordShareById } from "@/features/database/queries";
+import { getSignedVideoUrl } from "@/features/storage/actions";
 import { isShareSessionValid } from "./actions";
 
 interface SharePageProps {
@@ -125,6 +126,10 @@ export default async function SharePage({
   const { seizureRecord, patient, careHome, recorder, file } = row;
   const patientName = formatName(patient.firstName, patient.lastName);
 
+  const videoUrl = file?.s3Key
+    ? await getSignedVideoUrl(file.s3Key, 300)
+    : null;
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border px-6 py-4 flex items-center justify-between">
@@ -158,9 +163,9 @@ export default async function SharePage({
           </CardHeader>
           <CardContent className="p-6 pt-0">
             <div className="aspect-video bg-slate-900 rounded-xl flex items-center justify-center text-slate-300">
-              {file ? (
+              {videoUrl ? (
                 <video
-                  src={`/api/files/${file.id}`}
+                  src={videoUrl}
                   controls
                   className="w-full h-full rounded-xl"
                 />
@@ -209,10 +214,6 @@ export default async function SharePage({
         </Card>
 
         <div className="flex flex-wrap gap-3">
-          <Button className="rounded-xl">
-            <Download className="w-4 h-4 mr-2" />
-            Download video
-          </Button>
           <Button variant="outline" className="rounded-xl">
             <Mail className="w-4 h-4 mr-2" />
             Request more info
