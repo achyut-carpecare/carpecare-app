@@ -80,8 +80,8 @@ export async function inviteUserAction({
 }) {
   try {
     const auth = await requireSystemAdmin();
-    if (auth.error) {
-      return { error: auth.error };
+    if (auth.error || !auth.profile) {
+      return { error: auth.error ?? "You must be a system admin" };
     }
 
     const inviterProfile = auth.profile;
@@ -249,15 +249,15 @@ export async function joinCareHomeAction({
 }) {
   try {
     const auth = await requireSystemAdmin();
-    if (auth.error) {
-      return { error: auth.error };
+    if (auth.error || !auth.userId) {
+      return { error: auth.error ?? "You must be a system admin" };
     }
 
     const currentUserId = auth.userId;
 
     const existing = await getCareHomeMemberByUserIdAndCareHomeId(
       db,
-      auth.userId,
+      currentUserId,
       careHomeId,
     );
     if (existing) {
