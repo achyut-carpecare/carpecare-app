@@ -102,7 +102,8 @@ export default async function RegisterPage({
             email address.
           </p>
           <div className="flex flex-col gap-2">
-            <form action={signOut.bind(null, registerUrl)} className="inline">
+            <form action={signOut} className="inline">
+              <input type="hidden" name="redirect" value={registerUrl} />
               <button
                 type="submit"
                 className="text-primary hover:underline font-[inherit] text-[length:inherit]"

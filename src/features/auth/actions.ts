@@ -36,7 +36,8 @@ export async function signIn(formData: FormData) {
   redirect(safeRedirect);
 }
 
-export async function signOut(redirectTo?: string) {
+export async function signOut(formData?: FormData) {
+  const redirectTo = formData?.get("redirect") as string | undefined;
   const supabase = await createClient();
   await supabase.auth.signOut();
   revalidatePath("/", "layout");

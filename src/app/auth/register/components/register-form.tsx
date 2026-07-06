@@ -73,15 +73,18 @@ export function RegisterForm({
       password,
     });
 
+    if ("existingAccount" in result && result.existingAccount) {
+      setError(result.error);
+      setIsSubmitting(false);
+      router.push(
+        `/auth/login?redirect=${encodeURIComponent(`/invite/${invitationId}?token=${linkToken}`)}`,
+      );
+      return;
+    }
+
     if (result.error) {
       setError(result.error);
       setIsSubmitting(false);
-
-      if (result.existingAccount) {
-        router.push(
-          `/auth/login?redirect=${encodeURIComponent(`/invite/${invitationId}?token=${linkToken}`)}`,
-        );
-      }
       return;
     }
   }

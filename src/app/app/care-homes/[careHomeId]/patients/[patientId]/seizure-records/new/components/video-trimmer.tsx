@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile } from "@ffmpeg/util";
-import { createFile } from "mp4box";
+import { createFile, MP4BoxBuffer } from "mp4box";
 import {
   Play,
   Pause,
@@ -15,10 +15,6 @@ import {
 import { Button } from "@/components/ui/button";
 
 const THUMBNAIL_COUNT = 20;
-
-// NOTE: MP4/QuickTime stores timestamps as seconds since 1904-01-01, while JS Date
-// uses milliseconds since the Unix epoch (1970-01-01). This offset bridges the two.
-const MP4_EPOCH_OFFSET_SECONDS = 2082844800;
 
 type Status =
   | "idle"
@@ -60,8 +56,7 @@ async function extractMp4CreationTime(file: File): Promise<Date | null> {
     const reader = new FileReader();
     reader.onload = () => {
       const buffer = reader.result as ArrayBuffer;
-      (buffer as unknown as { fileStart: number }).fileStart = 0;
-
+      const mp4boxBuffer = MP4BoxBuffer.fromArrayBuffer(buffer, 0);
       const mp4boxFile = createFile();
       let resolved = false;
 
@@ -69,15 +64,12 @@ async function extractMp4CreationTime(file: File): Promise<Date | null> {
         if (resolved) return;
         resolved = true;
 
-        const mvhd = info.mvhd ?? info.mvhds?.[0];
-        if (!mvhd?.creation_time) {
+        if (!info.created || isNaN(info.created.getTime())) {
           resolve(null);
           return;
         }
 
-        const unixSeconds =
-          Number(mvhd.creation_time) - MP4_EPOCH_OFFSET_SECONDS;
-        resolve(new Date(unixSeconds * 1000));
+        resolve(info.created);
       };
 
       mp4boxFile.onError = () => {
@@ -88,7 +80,7 @@ async function extractMp4CreationTime(file: File): Promise<Date | null> {
       };
 
       try {
-        mp4boxFile.appendBuffer(buffer);
+        mp4boxFile.appendBuffer(mp4boxBuffer);
         mp4boxFile.flush();
       } catch {
         if (!resolved) {

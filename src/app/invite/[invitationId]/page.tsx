@@ -103,7 +103,8 @@ export default async function InvitePage({
             >
               Sign in with the invited email
             </Link>
-            <form action={signOut.bind(null, inviteUrl)} className="inline">
+            <form action={signOut} className="inline">
+              <input type="hidden" name="redirect" value={inviteUrl} />
               <button
                 type="submit"
                 className="text-primary hover:underline font-[inherit] text-[length:inherit]"
@@ -124,7 +125,7 @@ export default async function InvitePage({
     user.id,
   );
 
-  if (result.error) {
+  if ("error" in result) {
     return (
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="max-w-md text-center space-y-4">
