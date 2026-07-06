@@ -53,7 +53,7 @@ async function requireManager(careHomeId: string): Promise<ManagerResult> {
 
   const { profile, memberships } = result;
 
-  if (profile.role === "system_admin") {
+  if (profile.isSystemAdmin) {
     return { error: null, userId: user.id, profile };
   }
 
@@ -264,10 +264,7 @@ export async function updateMemberRoleAction({
     }
 
     const targetProfile = await getUserProfileById(db, member.userId);
-    if (
-      targetProfile?.role === "system_admin" &&
-      auth.profile?.role !== "system_admin"
-    ) {
+    if (targetProfile?.isSystemAdmin && !auth.profile?.isSystemAdmin) {
       return { error: "You cannot change the role of a system administrator" };
     }
 
@@ -301,10 +298,7 @@ export async function removeMemberAction(memberId: string) {
     }
 
     const targetProfile = await getUserProfileById(db, member.userId);
-    if (
-      targetProfile?.role === "system_admin" &&
-      auth.profile?.role !== "system_admin"
-    ) {
+    if (targetProfile?.isSystemAdmin && !auth.profile?.isSystemAdmin) {
       return { error: "You cannot remove a system administrator" };
     }
 

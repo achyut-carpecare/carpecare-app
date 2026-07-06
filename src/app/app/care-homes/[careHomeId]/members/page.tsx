@@ -10,6 +10,7 @@ import {
   getUserWithMemberships,
 } from "@/features/database/queries";
 import { InviteMemberDialog } from "./components/invite-member-dialog";
+import { JoinCareHomeButton } from "./components/join-care-home-button";
 import { MembersList } from "./components/members-list";
 
 interface MembersPageProps {
@@ -35,8 +36,9 @@ export default async function MembersPage({ params }: MembersPageProps) {
 
   const { profile, memberships } = result;
 
-  const isSystemAdmin = profile.role === "system_admin";
+  const isSystemAdmin = profile.isSystemAdmin;
   const membership = memberships.find((m) => m.careHome.id === careHomeId);
+  const isMember = membership != null;
   const isCareHomeAdmin = membership?.role === "admin";
   const canManage = isSystemAdmin || isCareHomeAdmin;
 
@@ -76,7 +78,12 @@ export default async function MembersPage({ params }: MembersPageProps) {
         title="Team members"
         subtitle={`Manage who can access ${careHome.name ?? "this care home"}`}
         actions={
-          <>{canManage && <InviteMemberDialog careHomeId={careHomeId} />}</>
+          <div className="flex items-center gap-2">
+            {isSystemAdmin && !isMember && (
+              <JoinCareHomeButton careHomeId={careHomeId} />
+            )}
+            {canManage && <InviteMemberDialog careHomeId={careHomeId} />}
+          </div>
         }
       />
 

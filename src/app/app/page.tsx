@@ -34,7 +34,7 @@ export default async function AppPage() {
 
   const { profile, memberships } = result;
 
-  if (profile.role === "system_admin") {
+  if (profile.isSystemAdmin) {
     redirect("/app/admin");
   }
 

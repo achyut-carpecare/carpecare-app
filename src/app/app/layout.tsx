@@ -33,7 +33,7 @@ export default async function AppLayout({
   return (
     <AppShell
       userEmail={user.email}
-      userRole={profile.role}
+      userRole={profile.isSystemAdmin}
       careHomes={careHomes}
       adminCareHomeIds={adminCareHomeIds}
     >

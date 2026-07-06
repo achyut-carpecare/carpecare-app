@@ -46,12 +46,11 @@ export default async function PatientsPage({
   const { profile, memberships } = userData;
   const membership = memberships.find((m) => m.careHome.id === careHomeId);
 
-  if (!membership && profile.role !== "system_admin") {
+  if (!membership && !profile.isSystemAdmin) {
     notFound();
   }
 
-  const isAdmin =
-    profile.role === "system_admin" || membership?.role === "admin";
+  const isAdmin = profile.isSystemAdmin || membership?.role === "admin";
 
   const careHome = await getCareHomeById(db, careHomeId);
   if (!careHome) {

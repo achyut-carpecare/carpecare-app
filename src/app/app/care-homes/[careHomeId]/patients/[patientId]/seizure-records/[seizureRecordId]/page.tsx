@@ -1,7 +1,6 @@
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Pencil, Trash2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/features/auth/server";
 import { db } from "@/features/database";
@@ -19,6 +18,8 @@ import {
 } from "@/features/dashboard/lib/format";
 import { getSignedVideoUrl } from "@/features/storage/actions";
 import { ShareDialog } from "./components/share-dialog";
+import { DeleteSeizureRecordButton } from "./components/delete-seizure-record-button";
+import { EditSeizureRecordDialog } from "./components/edit-seizure-record-dialog";
 
 interface SeizureRecordPageProps {
   params: Promise<{
@@ -49,7 +50,7 @@ export default async function SeizureRecordPage({
 
   const { profile, memberships } = userData;
   const membership = memberships.find((m) => m.careHome.id === careHomeId);
-  if (!membership && profile.role !== "system_admin") {
+  if (!membership && !profile.isSystemAdmin) {
     notFound();
   }
 
@@ -98,18 +99,22 @@ export default async function SeizureRecordPage({
         actions={
           <>
             <ShareDialog seizureRecordId={seizureRecordId} />
-            <Button asChild variant="secondary" className="rounded-xl">
-              <Link
-                href={`/app/care-homes/${careHomeId}/patients/${patientId}/seizure-records/${seizureRecordId}/edit`}
-              >
-                <Pencil className="w-4 h-4 mr-2" />
-                Edit
-              </Link>
-            </Button>
-            <Button variant="destructive" className="rounded-xl">
-              <Trash2 className="w-4 h-4 mr-2" />
-              Delete
-            </Button>
+            <EditSeizureRecordDialog
+              careHomeId={careHomeId}
+              patientId={patientId}
+              seizureRecordId={seizureRecordId}
+              initial={{
+                recordedAt: seizureRecord.recordedAt,
+                durationSeconds: seizureRecord.durationSeconds,
+                seizureType: seizureRecord.seizureType,
+                notes: seizureRecord.notes,
+              }}
+            />
+            <DeleteSeizureRecordButton
+              careHomeId={careHomeId}
+              patientId={patientId}
+              seizureRecordId={seizureRecordId}
+            />
           </>
         }
       />

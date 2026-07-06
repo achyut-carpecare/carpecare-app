@@ -54,6 +54,19 @@ export async function updateUserProfileById(
   return updatedProfile;
 }
 
+export async function updateUserSystemAdminById(
+  db: DB,
+  id: string,
+  isSystemAdmin: boolean,
+): Promise<DBTables["userProfiles"] | undefined> {
+  const [updatedProfile] = await db
+    .update(schema.userProfiles)
+    .set({ isSystemAdmin, updatedAt: new Date().toISOString() })
+    .where(eq(schema.userProfiles.id, id))
+    .returning();
+  return updatedProfile;
+}
+
 export async function deleteUserProfileById(
   db: DB,
   id: string,

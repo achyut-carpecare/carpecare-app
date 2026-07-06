@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   LogOut,
   Menu,
+  Shield,
   Users,
   UserCog,
   X,
@@ -25,7 +26,7 @@ interface CareHome {
 
 interface AppShellProps {
   userEmail?: string | null;
-  userRole: "system_admin" | "care_home_user";
+  userRole: boolean;
   careHomes: CareHome[];
   adminCareHomeIds?: string[];
   children: React.ReactNode;
@@ -35,35 +36,25 @@ interface NavItem {
   name: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-  adminOnly?: boolean;
 }
 
-const navItems: NavItem[] = [
-  {
-    name: "Dashboard",
-    href: "/app",
-    icon: LayoutDashboard,
-    adminOnly: false,
-  },
-  {
-    name: "Patients",
-    href: "/patients",
-    icon: Users,
-    adminOnly: false,
-  },
-  {
-    name: "Members",
-    href: "/members",
-    icon: UserCog,
-    adminOnly: false,
-  },
-  {
-    name: "Care homes",
-    href: "/app/admin",
-    icon: Building2,
-    adminOnly: true,
-  },
-];
+interface NavSection {
+  title: string;
+  items: NavItem[];
+}
+
+function resolveHref(item: NavItem, currentCareHomeId: string | undefined) {
+  if (item.href === "/app") {
+    return currentCareHomeId ? `/app/care-homes/${currentCareHomeId}` : "/app";
+  }
+  if (item.href === "/patients" && currentCareHomeId) {
+    return `/app/care-homes/${currentCareHomeId}/patients`;
+  }
+  if (item.href === "/members" && currentCareHomeId) {
+    return `/app/care-homes/${currentCareHomeId}/members`;
+  }
+  return item.href;
+}
 
 export function AppShell({
   userEmail,
@@ -75,45 +66,59 @@ export function AppShell({
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const isAdminView = pathname.startsWith("/app/admin");
-  const effectiveRole = isAdminView ? "system_admin" : userRole;
-
   const careHomeMatch = pathname.match(/\/app\/care-homes\/([^\/]+)/);
   const currentCareHomeId = careHomeMatch?.[1] ?? careHomes[0]?.id;
 
-  const visibleNav = navItems.filter((item) => {
-    if (item.adminOnly) return effectiveRole === "system_admin";
-    if (item.href === "/members") {
-      return (
-        effectiveRole === "system_admin" ||
-        (currentCareHomeId
-          ? adminCareHomeIds.includes(currentCareHomeId)
-          : false)
-      );
-    }
-    return effectiveRole !== "system_admin";
-  });
+  const careHomeSection: NavSection = {
+    title: "Care home",
+    items: [
+      { name: "Dashboard", href: "/app", icon: LayoutDashboard },
+      { name: "Residents", href: "/patients", icon: Users },
+      { name: "Members", href: "/members", icon: UserCog },
+    ],
+  };
 
-  function resolveHref(item: NavItem) {
-    if (item.href === "/app") {
-      return currentCareHomeId
-        ? `/app/care-homes/${currentCareHomeId}`
-        : "/app";
-    }
-    if (item.href === "/patients" && currentCareHomeId) {
-      return `/app/care-homes/${currentCareHomeId}/patients`;
-    }
-    if (item.href === "/members" && currentCareHomeId) {
-      return `/app/care-homes/${currentCareHomeId}/members`;
-    }
-    return item.href;
+  const adminSection: NavSection = {
+    title: "Administration",
+    items: [
+      { name: "Care homes", href: "/app/admin", icon: Building2 },
+      { name: "Users", href: "/app/admin/users", icon: Shield },
+    ],
+  };
+
+  const sections: NavSection[] = [careHomeSection];
+  if (userRole) {
+    sections.push(adminSection);
   }
+
+  const activeNavItem = (() => {
+    const allItems = sections.flatMap((section) => section.items);
+    const candidates = allItems
+      .map((item) => ({ item, href: resolveHref(item, currentCareHomeId) }))
+      .filter(({ href }) => {
+        if (href === "/app") return pathname === "/app";
+        return pathname.startsWith(href);
+      })
+      .sort((a, b) => b.href.length - a.href.length);
+
+    return candidates[0]?.item ?? null;
+  })();
 
   function isActive(item: NavItem) {
-    const href = resolveHref(item);
-    if (href === "/app" && pathname === "/app") return true;
-    return pathname.startsWith(href) && href !== "/app";
+    return item === activeNavItem;
   }
+
+  const isMemberOfCurrentCareHome = currentCareHomeId
+    ? careHomes.some((h) => h.id === currentCareHomeId)
+    : false;
+  const isAdminOfCurrentCareHome = currentCareHomeId
+    ? adminCareHomeIds.includes(currentCareHomeId)
+    : false;
+
+  const currentCareHome = careHomes.find((h) => h.id === currentCareHomeId);
+  const currentCareHomeName = currentCareHome?.name ?? "Care home";
+  const viewingNonMemberCareHome =
+    !!currentCareHomeId && !isMemberOfCurrentCareHome;
 
   return (
     <div className="min-h-full flex">
@@ -143,40 +148,67 @@ export function AppShell({
           </Link>
         </div>
 
-        {!isAdminView && careHomes.length > 0 && (
-          <div className="p-3">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5 block">
-              Care home
-            </label>
-            <CareHomeSwitcher
-              careHomes={careHomes}
-              currentCareHomeId={currentCareHomeId ?? careHomes[0].id}
-            />
-          </div>
-        )}
+        <nav className="flex-1 p-3 space-y-6 overflow-y-auto">
+          {sections.map((section) => (
+            <div key={section.title} className="space-y-1">
+              <div className="px-3 py-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  {section.title}
+                </span>
+              </div>
+              {section.title === "Care home" && (
+                <div className="px-3 pb-2">
+                  {careHomes.length > 0 ? (
+                    <CareHomeSwitcher
+                      careHomes={careHomes}
+                      currentCareHomeId={currentCareHomeId ?? careHomes[0].id}
+                    />
+                  ) : (
+                    <div className="text-xs text-muted-foreground px-1">
+                      Not a member of any care home
+                    </div>
+                  )}
+                  {viewingNonMemberCareHome && (
+                    <div className="mt-2 text-xs text-muted-foreground px-1">
+                      Viewing:{" "}
+                      <span className="font-medium text-foreground">
+                        {currentCareHomeName}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+              {section.items.map((item) => {
+                const href = resolveHref(item, currentCareHomeId);
+                const active = isActive(item);
+                const Icon = item.icon;
 
-        <nav className="flex-1 p-3 space-y-1">
-          {visibleNav.map((item) => {
-            const href = resolveHref(item);
-            const active = isActive(item);
-            const Icon = item.icon;
+                if (
+                  item.href === "/members" &&
+                  !userRole &&
+                  !isAdminOfCurrentCareHome
+                ) {
+                  return null;
+                }
 
-            return (
-              <Link
-                key={item.name}
-                href={href}
-                onClick={() => setMobileOpen(false)}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors ${
-                  active
-                    ? "bg-primary/10 text-primary font-semibold"
-                    : "text-muted-foreground hover:bg-muted"
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                {item.name}
-              </Link>
-            );
-          })}
+                return (
+                  <Link
+                    key={item.name}
+                    href={href}
+                    onClick={() => setMobileOpen(false)}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors ${
+                      active
+                        ? "bg-primary/10 text-primary font-semibold"
+                        : "text-muted-foreground hover:bg-muted"
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {item.name}
+                  </Link>
+                );
+              })}
+            </div>
+          ))}
         </nav>
 
         <Separator />

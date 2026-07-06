@@ -1,4 +1,5 @@
 import { redirect, notFound } from "next/navigation";
+import Link from "next/link";
 import { Building2, Users } from "lucide-react";
 import {
   Table,
@@ -33,7 +34,7 @@ export default async function AdminDashboardPage() {
 
   const result = await getUserWithMemberships(db, user.id);
 
-  if (!result || result.profile.role !== "system_admin") {
+  if (!result || !result.profile.isSystemAdmin) {
     notFound();
   }
 
@@ -108,7 +109,12 @@ export default async function AdminDashboardPage() {
               {careHomesWithCounts.map((home) => (
                 <TableRow key={home.id}>
                   <TableCell className="font-medium">
-                    {home.name ?? "Unnamed care home"}
+                    <Link
+                      href={`/app/care-homes/${home.id}`}
+                      className="hover:underline"
+                    >
+                      {home.name ?? "Unnamed care home"}
+                    </Link>
                   </TableCell>
                   <TableCell className="text-right">
                     {home.patientCount}

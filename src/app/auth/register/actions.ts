@@ -145,7 +145,7 @@ export async function registerWithInvitationAction(
           id: userId,
           firstName,
           lastName,
-          role: "care_home_user",
+          isSystemAdmin: false,
         })
         .onConflictDoUpdate({
           target: schema.userProfiles.id,

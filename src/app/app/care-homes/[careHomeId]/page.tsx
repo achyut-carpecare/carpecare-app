@@ -52,7 +52,7 @@ export default async function CareHomeDashboardPage({
 
   const isMember = memberships.some((m) => m.careHome.id === careHomeId);
 
-  if (!isMember && profile.role !== "system_admin") {
+  if (!isMember && !profile.isSystemAdmin) {
     notFound();
   }
 

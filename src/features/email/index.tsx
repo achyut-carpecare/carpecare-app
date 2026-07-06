@@ -3,6 +3,7 @@ import { transporter, DEFAULT_FROM } from "./transporter";
 import { ShareLinkEmail } from "./templates/share-link";
 import { ShareOtpEmail } from "./templates/share-otp";
 import { InvitationEmail } from "./templates/invite-link";
+import { PlatformInviteEmail } from "./templates/platform-invite";
 
 export * from "./lib/crypto";
 
@@ -87,5 +88,29 @@ export async function sendInvitationEmail({
   });
 
   console.log("Invitation email sent:", info.messageId, "to:", to);
+  return info;
+}
+
+export async function sendPlatformInviteEmail({
+  to,
+  inviterName,
+  setPasswordUrl,
+}: {
+  to: string;
+  inviterName: string;
+  setPasswordUrl: string;
+}) {
+  const html = await render(
+    PlatformInviteEmail({ inviterName, setPasswordUrl }),
+  );
+
+  const info = await transporter.sendMail({
+    from: DEFAULT_FROM,
+    to,
+    subject: "You're invited to join Carpe Care",
+    html,
+  });
+
+  console.log("Platform invite email sent:", info.messageId, "to:", to);
   return info;
 }
