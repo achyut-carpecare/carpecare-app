@@ -5,6 +5,7 @@ export * from "./files";
 export * from "./invitations";
 export * from "./patient-detail";
 export * from "./patients";
+export * from "./platform-invitations";
 export * from "./seizure-record-shares";
 export * from "./seizure-records";
 export * from "./user-profiles";

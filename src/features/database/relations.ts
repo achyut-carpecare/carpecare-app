@@ -8,6 +8,7 @@ import {
   careHomeInvitations,
   patients,
   files,
+  platformInvitations,
 } from "./schema";
 
 export const seizureRecordSharesRelations = relations(
@@ -53,6 +54,12 @@ export const userProfilesRelations = relations(userProfiles, ({ many }) => ({
     relationName: "careHomeInvitations_invitedBy_userProfiles_id",
   }),
   seizureRecords: many(seizureRecords),
+  platformInvitations_acceptedBy: many(platformInvitations, {
+    relationName: "platformInvitations_acceptedBy_userProfiles_id",
+  }),
+  platformInvitations_invitedBy: many(platformInvitations, {
+    relationName: "platformInvitations_invitedBy_userProfiles_id",
+  }),
 }));
 
 export const careHomeMembersRelations = relations(
@@ -106,3 +113,19 @@ export const patientsRelations = relations(patients, ({ one, many }) => ({
 export const filesRelations = relations(files, ({ many }) => ({
   seizureRecords: many(seizureRecords),
 }));
+
+export const platformInvitationsRelations = relations(
+  platformInvitations,
+  ({ one }) => ({
+    userProfile_acceptedBy: one(userProfiles, {
+      fields: [platformInvitations.acceptedBy],
+      references: [userProfiles.id],
+      relationName: "platformInvitations_acceptedBy_userProfiles_id",
+    }),
+    userProfile_invitedBy: one(userProfiles, {
+      fields: [platformInvitations.invitedBy],
+      references: [userProfiles.id],
+      relationName: "platformInvitations_invitedBy_userProfiles_id",
+    }),
+  }),
+);

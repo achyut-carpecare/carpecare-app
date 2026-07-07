@@ -24,14 +24,16 @@ export const invitationStatus = pgEnum("invitation_status", [
 ]);
 
 export const gooseDbVersion = pgTable("goose_db_version", {
-  id: integer().primaryKey().generatedByDefaultAsIdentity({
-    name: "goose_db_version_id_seq",
-    startWith: 1,
-    increment: 1,
-    minValue: 1,
-    maxValue: 2147483647,
-    cache: 1,
-  }),
+  id: integer()
+    .primaryKey()
+    .generatedByDefaultAsIdentity({
+      name: "goose_db_version_id_seq",
+      startWith: 1,
+      increment: 1,
+      minValue: 1,
+      maxValue: 2147483647,
+      cache: 1,
+    }),
   // You can use { mode: "bigint" } if numbers are exceeding js number limitations
   versionId: bigint("version_id", { mode: "number" }).notNull(),
   isApplied: boolean("is_applied").notNull(),
@@ -232,6 +234,41 @@ export const careHome = pgTable("care_home", {
   createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
 });
+
+export const platformInvitations = pgTable(
+  "platform_invitations",
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    invitedEmail: varchar("invited_email").notNull(),
+    invitedBy: uuid("invited_by"),
+    status: invitationStatus().default("pending").notNull(),
+    linkTokenHash: text("link_token_hash"),
+    acceptedAt: timestamp("accepted_at", { mode: "string" }),
+    acceptedBy: uuid("accepted_by"),
+    expiresAt: timestamp("expires_at", { mode: "string" }),
+    createdAt: timestamp("created_at", { mode: "string" })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { mode: "string" })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("idx_platform_invitations_pending_email")
+      .using("btree", table.invitedEmail.asc().nullsLast().op("text_ops"))
+      .where(sql`(status = 'pending'::invitation_status)`),
+    foreignKey({
+      columns: [table.acceptedBy],
+      foreignColumns: [userProfiles.id],
+      name: "platform_invitations_accepted_by_fkey",
+    }).onDelete("set null"),
+    foreignKey({
+      columns: [table.invitedBy],
+      foreignColumns: [userProfiles.id],
+      name: "platform_invitations_invited_by_fkey",
+    }).onDelete("set null"),
+  ],
+);
 
 export const userProfiles = pgTable("user_profiles", {
   id: uuid().primaryKey().notNull(),

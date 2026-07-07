@@ -11,9 +11,11 @@ import {
   getUserProfileById,
   getUserWithMemberships,
   updateUserSystemAdminById,
+  createPlatformInvitation,
+  getPendingPlatformInvitationByEmail,
 } from "@/features/database/queries";
 import { sendPlatformInviteEmail } from "@/features/email";
-import { generateToken } from "@/features/email";
+import { generateToken, hashToken } from "@/features/email";
 
 function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
@@ -97,6 +99,16 @@ export async function inviteUserAction({
       return { error: "First and last name are required" };
     }
 
+    const existingPending = await getPendingPlatformInvitationByEmail(
+      db,
+      normalizedEmail,
+    );
+    if (existingPending) {
+      return {
+        error: "An invitation is already pending for this email address",
+      };
+    }
+
     const adminClient = await createAdminClient();
 
     const { data: existingUsers, error: listError } =
@@ -113,36 +125,20 @@ export async function inviteUserAction({
       return { error: "An account already exists for this email address" };
     }
 
-    const { data: userData, error: createError } =
-      await adminClient.auth.admin.createUser({
-        email: normalizedEmail,
-        password: randomPassword(),
-        email_confirm: true,
-        user_metadata: {
-          first_name: trimmedFirstName,
-          last_name: trimmedLastName,
-          is_system_admin: true,
-        },
-      });
+    const linkToken = generateToken();
+    const linkTokenHash = hashToken(linkToken);
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
-    if (createError || !userData.user) {
-      console.error("Failed to create invited user:", createError);
-      return { error: "Failed to create account" };
-    }
+    const invitation = await createPlatformInvitation(db, {
+      invitedEmail: normalizedEmail,
+      invitedBy: auth.userId,
+      status: "pending",
+      linkTokenHash,
+      expiresAt: expiresAt.toISOString(),
+    });
 
-    const { data: linkData, error: linkError } =
-      await adminClient.auth.admin.generateLink({
-        type: "recovery",
-        email: normalizedEmail,
-      });
-
-    if (linkError || !linkData.properties?.action_link) {
-      console.error("Failed to generate password reset link:", linkError);
-      return {
-        error:
-          "Account created but the password setup link could not be generated. Please ask the user to use password reset.",
-      };
-    }
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+    const registerUrl = `${appUrl}/auth/register-admin?invite=${invitation.id}&token=${linkToken}`;
 
     await sendPlatformInviteEmail({
       to: normalizedEmail,
@@ -150,7 +146,7 @@ export async function inviteUserAction({
         inviterProfile.firstName,
         inviterProfile.lastName,
       ),
-      setPasswordUrl: linkData.properties.action_link,
+      registerUrl,
     });
 
     revalidatePath("/app/admin/users");

@@ -94,15 +94,13 @@ export async function sendInvitationEmail({
 export async function sendPlatformInviteEmail({
   to,
   inviterName,
-  setPasswordUrl,
+  registerUrl,
 }: {
   to: string;
   inviterName: string;
-  setPasswordUrl: string;
+  registerUrl: string;
 }) {
-  const html = await render(
-    PlatformInviteEmail({ inviterName, setPasswordUrl }),
-  );
+  const html = await render(PlatformInviteEmail({ inviterName, registerUrl }));
 
   const info = await transporter.sendMail({
     from: DEFAULT_FROM,

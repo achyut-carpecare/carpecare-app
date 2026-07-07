@@ -3,12 +3,12 @@ import { BaseEmail, emailStyles } from "./base";
 
 interface PlatformInviteEmailProps {
   inviterName: string;
-  setPasswordUrl: string;
+  registerUrl: string;
 }
 
 export function PlatformInviteEmail({
   inviterName,
-  setPasswordUrl,
+  registerUrl,
 }: PlatformInviteEmailProps) {
   const preview = `${inviterName} has invited you to join Carpe Care.`;
 
@@ -21,16 +21,17 @@ export function PlatformInviteEmail({
         You&apos;re invited to Carpe Care
       </Heading>
       <Text style={emailStyles.text}>
-        {inviterName} has invited you to join Carpe Care. Click the button below
-        to set your password and get started.
+        {inviterName} has invited you to join Carpe Care as a system
+        administrator. Click the button below to create your account and set
+        your password.
       </Text>
       <Section style={emailStyles.buttonContainer}>
-        <Button href={setPasswordUrl} style={emailStyles.button}>
-          Set your password
+        <Button href={registerUrl} style={emailStyles.button}>
+          Create account
         </Button>
       </Section>
       <Text style={emailStyles.text}>
-        This link expires in 24 hours. If you were not expecting this email, you
+        This link expires in 7 days. If you were not expecting this email, you
         can safely ignore it.
       </Text>
     </BaseEmail>
