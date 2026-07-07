@@ -59,6 +59,14 @@ async function requireManager(careHomeId: string): Promise<ManagerResult> {
 
   const membership = memberships.find((m) => m.careHome.id === careHomeId);
   if (!membership || membership.role !== "admin") {
+    console.warn(
+      "requireManager: user",
+      user.id,
+      "is not an admin of care home",
+      careHomeId,
+      "memberships:",
+      memberships.map((m) => ({ careHomeId: m.careHome.id, role: m.role })),
+    );
     return {
       error: "You do not have permission to manage this care home",
       userId: user.id,
@@ -263,8 +271,12 @@ export async function updateMemberRoleAction({
       return { error: auth.error };
     }
 
+    if (!auth.profile) {
+      return { error: "Unable to verify your permissions" };
+    }
+
     const targetProfile = await getUserProfileById(db, member.userId);
-    if (targetProfile?.isSystemAdmin && !auth.profile?.isSystemAdmin) {
+    if (targetProfile?.isSystemAdmin && !auth.profile.isSystemAdmin) {
       return { error: "You cannot change the role of a system administrator" };
     }
 
