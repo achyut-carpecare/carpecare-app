@@ -58,7 +58,7 @@ function TimelineEvent({
     <div className="relative">
       <div
         className={[
-          "absolute -left-7 top-1.5 w-3 h-3 rounded-full border-2 border-background shadow-sm",
+          "absolute -left-[22px] top-2 w-3 h-3 rounded-full border-2 border-background shadow-sm",
           isSeizure ? "bg-amber-500" : "bg-primary",
         ].join(" ")}
       />
