@@ -4,8 +4,9 @@ export function formatName(first?: string | null, last?: string | null) {
 
 export function formatDuration(seconds: number | null | undefined) {
   if (seconds == null) return "—";
-  const m = Math.floor(seconds / 60);
-  const s = seconds % 60;
+  const rounded = Math.round(seconds);
+  const m = Math.floor(rounded / 60);
+  const s = rounded % 60;
   if (m > 0) return `${m}m ${s.toString().padStart(2, "0")}s`;
   return `${s}s`;
 }
