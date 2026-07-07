@@ -71,15 +71,7 @@ function randomPassword(): string {
   return `${generateToken(32)}${generateToken(32)}`;
 }
 
-export async function inviteUserAction({
-  email,
-  firstName,
-  lastName,
-}: {
-  email: string;
-  firstName: string;
-  lastName: string;
-}) {
+export async function inviteUserAction({ email }: { email: string }) {
   try {
     const auth = await requireSystemAdmin();
     if (auth.error || !auth.profile) {
@@ -91,12 +83,6 @@ export async function inviteUserAction({
     const normalizedEmail = normalizeEmail(email);
     if (!normalizedEmail || !normalizedEmail.includes("@")) {
       return { error: "A valid email address is required" };
-    }
-
-    const trimmedFirstName = firstName.trim();
-    const trimmedLastName = lastName.trim();
-    if (!trimmedFirstName || !trimmedLastName) {
-      return { error: "First and last name are required" };
     }
 
     const existingPending = await getPendingPlatformInvitationByEmail(

@@ -23,8 +23,6 @@ export function InviteUserDialog() {
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [email, setEmail] = useState("");
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -32,8 +30,6 @@ export function InviteUserDialog() {
 
     const result = await inviteUserAction({
       email,
-      firstName,
-      lastName,
     });
 
     setIsSubmitting(false);
@@ -45,16 +41,11 @@ export function InviteUserDialog() {
 
     toast.success("Invitation sent");
     setEmail("");
-    setFirstName("");
-    setLastName("");
     setOpen(false);
     router.refresh();
   }
 
-  const canSubmit =
-    email.trim().includes("@") &&
-    firstName.trim().length > 0 &&
-    lastName.trim().length > 0;
+  const canSubmit = email.trim().includes("@");
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -69,37 +60,12 @@ export function InviteUserDialog() {
           <DialogHeader>
             <DialogTitle>Invite platform user</DialogTitle>
             <DialogDescription>
-              Create an account and send a password setup link. They will be
-              invited as a system administrator.
+              Send an invitation to create a system administrator account. They
+              will set their name and password when they accept.
             </DialogDescription>
           </DialogHeader>
 
           <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="firstName">First name</Label>
-                <Input
-                  id="firstName"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  placeholder="Jane"
-                  className="rounded-xl"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="lastName">Last name</Label>
-                <Input
-                  id="lastName"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  placeholder="Doe"
-                  className="rounded-xl"
-                  required
-                />
-              </div>
-            </div>
-
             <div className="space-y-2">
               <Label htmlFor="email">Email address</Label>
               <Input
