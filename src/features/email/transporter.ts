@@ -24,10 +24,15 @@ export const transporter: Transporter = nodemailer.createTransport({
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
-  // Required for AWS SES on port 587 / STARTTLS.
-  tls: {
-    rejectUnauthorized: true,
-  },
+  // Dynamically adjust TLS settings based on the SMTP Host
+  tls: process.env.SMTP_HOST === "smtp.office365.com"
+    ? {
+        ciphers: 'SSLv3',
+        rejectUnauthorized: false, // Required specifically for Microsoft 365 basic SMTP handshakes
+      }
+    : {
+        rejectUnauthorized: true,  // Keeps AWS SES completely strict and secure
+      },
   debug: false,
   logger: false,
 });
