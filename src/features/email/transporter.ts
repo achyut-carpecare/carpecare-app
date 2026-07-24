@@ -1,6 +1,7 @@
 import nodemailer from "nodemailer";
 import type { Transporter } from "nodemailer";
 
+
 // Validate environment variables
 const requiredEnvVars = [
   "SMTP_HOST",
