@@ -3,6 +3,7 @@
 // isSystemAdmin - an unauthenticated full privilege escalation. Re-enable
 // only with requireAuth()/authorization added, and never allow isSystemAdmin
 // to be set from a client-supplied body.
+export {};
 //
 // import { NextResponse } from "next/server";
 // import { db } from "@/features/database";

@@ -1,6 +1,7 @@
 // Disabled: these handlers had no authentication check, allowing anyone to
 // list and create care homes. Re-enable only with requireAuth()/authorization
 // added, matching the pattern in src/app/api/care-homes/[careHomeId]/route.ts.
+export {};
 //
 // import { NextResponse } from "next/server";
 // import { db } from "@/features/database";

@@ -1,6 +1,7 @@
 // Disabled: these handlers had no authentication check, allowing anyone to
 // list every user's profile and create arbitrary profiles. Re-enable only
 // with requireAuth()/authorization added.
+export {};
 //
 // import { NextResponse } from "next/server";
 // import { db } from "@/features/database";
