@@ -9,6 +9,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/features/auth/server";
 import { getAuthUserEmailsByIds } from "@/features/auth/admin";
 import { db } from "@/features/database";
@@ -20,6 +21,7 @@ import { PageHeader } from "@/features/dashboard/components/page-header";
 import { InviteUserDialog } from "./components/invite-user-dialog";
 import { DeleteUserButton } from "./components/delete-user-button";
 import { AdminStatusSwitch } from "./components/admin-status-switch";
+import { ResetMfaButton } from "./components/reset-mfa-button";
 
 export default async function AdminUsersPage() {
   const supabase = await createClient();
@@ -62,6 +64,7 @@ export default async function AdminUsersPage() {
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>System admin</TableHead>
+                <TableHead>MFA</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -69,7 +72,7 @@ export default async function AdminUsersPage() {
               {profiles.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={4}
+                    colSpan={5}
                     className="text-center text-muted-foreground"
                   >
                     No users found.
@@ -97,7 +100,15 @@ export default async function AdminUsersPage() {
                         disabled={isCurrentUser}
                       />
                     </TableCell>
+                    <TableCell>
+                      {profile.mfaEnabled ? (
+                        <Badge variant="secondary">Enabled</Badge>
+                      ) : (
+                        <Badge variant="warning">Disabled</Badge>
+                      )}
+                    </TableCell>
                     <TableCell className="text-right">
+                      <ResetMfaButton userId={profile.id} />
                       <DeleteUserButton
                         userId={profile.id}
                         disabled={isCurrentUser}

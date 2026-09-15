@@ -3,6 +3,7 @@ export * from "./care-home-members";
 export * from "./dashboard";
 export * from "./files";
 export * from "./invitations";
+export * from "./mfa-recovery-codes";
 export * from "./patient-detail";
 export * from "./patients";
 export * from "./platform-invitations";

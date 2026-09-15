@@ -10,7 +10,7 @@
       "args": ["-y", "next-devtools-mcp@latest"]
     },
     "supabase": {
-      "url": "https://mcp.supabase.com/mcp?project_ref=otblessssxmgyroboxro&read_only=true&features=docs",
+      "url": "https://mcp.supabase.com/mcp?project_ref=lzkyctfoqotfwrufrbqq&read_only=true&features=docs",
       "directTools": true
     }
   }

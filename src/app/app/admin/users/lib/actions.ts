@@ -13,6 +13,7 @@ import {
   updateUserSystemAdminById,
   createPlatformInvitation,
   getPendingPlatformInvitationByEmail,
+  replaceMfaRecoveryCodes,
 } from "@/features/database/queries";
 import { sendPlatformInviteEmail } from "@/features/email";
 import { generateToken, hashToken } from "@/features/email";
@@ -219,6 +220,45 @@ export async function deleteUserAction(userId: string) {
   } catch (error) {
     console.error("Failed to delete user:", error);
     return { error: "Failed to delete user" };
+  }
+}
+
+export async function resetUserMfaAction(userId: string) {
+  try {
+    const auth = await requireSystemAdmin();
+    if (auth.error) {
+      return { error: auth.error };
+    }
+
+    const profile = await getUserProfileById(db, userId);
+    if (!profile) {
+      return { error: "User not found" };
+    }
+
+    const adminClient = await createAdminClient();
+    const { data: factorsData, error: factorsError } =
+      await adminClient.auth.admin.mfa.listFactors({ userId });
+
+    if (factorsError) {
+      console.error("Failed to list MFA factors:", factorsError);
+      return { error: "Failed to reset MFA" };
+    }
+
+    for (const factor of factorsData?.factors ?? []) {
+      await adminClient.auth.admin.mfa.deleteFactor({
+        id: factor.id,
+        userId,
+      });
+    }
+
+    await replaceMfaRecoveryCodes(db, userId, []);
+
+    revalidatePath("/app/admin/users");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to reset user MFA:", error);
+    return { error: "Failed to reset MFA" };
   }
 }
 

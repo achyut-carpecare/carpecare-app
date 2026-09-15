@@ -24,16 +24,14 @@ export const invitationStatus = pgEnum("invitation_status", [
 ]);
 
 export const gooseDbVersion = pgTable("goose_db_version", {
-  id: integer()
-    .primaryKey()
-    .generatedByDefaultAsIdentity({
-      name: "goose_db_version_id_seq",
-      startWith: 1,
-      increment: 1,
-      minValue: 1,
-      maxValue: 2147483647,
-      cache: 1,
-    }),
+  id: integer().primaryKey().generatedByDefaultAsIdentity({
+    name: "goose_db_version_id_seq",
+    startWith: 1,
+    increment: 1,
+    minValue: 1,
+    maxValue: 2147483647,
+    cache: 1,
+  }),
   // You can use { mode: "bigint" } if numbers are exceeding js number limitations
   versionId: bigint("version_id", { mode: "number" }).notNull(),
   isApplied: boolean("is_applied").notNull(),
@@ -277,4 +275,25 @@ export const userProfiles = pgTable("user_profiles", {
   createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
   isSystemAdmin: boolean("is_system_admin").default(false).notNull(),
+  mfaEnabled: boolean("mfa_enabled").default(true).notNull(),
 });
+
+export const mfaRecoveryCodes = pgTable(
+  "mfa_recovery_codes",
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    userId: uuid("user_id").notNull(),
+    codeHash: text("code_hash").notNull(),
+    usedAt: timestamp("used_at", { mode: "string" }),
+    createdAt: timestamp("created_at", { mode: "string" })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [userProfiles.id],
+      name: "mfa_recovery_codes_user_id_fkey",
+    }).onDelete("cascade"),
+  ],
+);
