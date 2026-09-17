@@ -1,11 +1,34 @@
 import { render } from "@react-email/components";
-import { transporter, DEFAULT_FROM } from "./transporter";
+import { resend, DEFAULT_FROM } from "./transporter";
 import { ShareLinkEmail } from "./templates/share-link";
 import { ShareOtpEmail } from "./templates/share-otp";
 import { InvitationEmail } from "./templates/invite-link";
 import { PlatformInviteEmail } from "./templates/platform-invite";
 
 export * from "./lib/crypto";
+
+async function sendEmail({
+  to,
+  subject,
+  html,
+}: {
+  to: string;
+  subject: string;
+  html: string;
+}) {
+  const { data, error } = await resend.emails.send({
+    from: DEFAULT_FROM,
+    to: [to],
+    subject,
+    html,
+  });
+
+  if (error) {
+    throw new Error(`Failed to send email: ${error.message}`);
+  }
+
+  return data;
+}
 
 export async function sendShareLinkEmail({
   to,
@@ -24,15 +47,14 @@ export async function sendShareLinkEmail({
     ShareLinkEmail({ careHomeName, patientName, shareUrl, expiresAt }),
   );
 
-  const info = await transporter.sendMail({
-    from: DEFAULT_FROM,
+  const data = await sendEmail({
     to,
     subject: "A seizure record has been shared with you",
     html,
   });
 
-  console.log("Share link email sent:", info.messageId, "to:", to);
-  return info;
+  console.log("Share link email sent:", data?.id, "to:", to);
+  return data;
 }
 
 export async function sendShareOtpEmail({
@@ -50,15 +72,14 @@ export async function sendShareOtpEmail({
     ShareOtpEmail({ careHomeName, otp, expiresInMinutes }),
   );
 
-  const info = await transporter.sendMail({
-    from: DEFAULT_FROM,
+  const data = await sendEmail({
     to,
     subject: "Your verification code",
     html,
   });
 
-  console.log("Share OTP email sent:", info.messageId, "to:", to);
-  return info;
+  console.log("Share OTP email sent:", data?.id, "to:", to);
+  return data;
 }
 
 export async function sendInvitationEmail({
@@ -80,15 +101,14 @@ export async function sendInvitationEmail({
     InvitationEmail({ careHomeName, inviterName, role, inviteUrl, expiresAt }),
   );
 
-  const info = await transporter.sendMail({
-    from: DEFAULT_FROM,
+  const data = await sendEmail({
     to,
     subject: `You're invited to join ${careHomeName} on Carpe Care`,
     html,
   });
 
-  console.log("Invitation email sent:", info.messageId, "to:", to);
-  return info;
+  console.log("Invitation email sent:", data?.id, "to:", to);
+  return data;
 }
 
 export async function sendPlatformInviteEmail({
@@ -102,13 +122,12 @@ export async function sendPlatformInviteEmail({
 }) {
   const html = await render(PlatformInviteEmail({ inviterName, registerUrl }));
 
-  const info = await transporter.sendMail({
-    from: DEFAULT_FROM,
+  const data = await sendEmail({
     to,
     subject: "You're invited to join Carpe Care",
     html,
   });
 
-  console.log("Platform invite email sent:", info.messageId, "to:", to);
-  return info;
+  console.log("Platform invite email sent:", data?.id, "to:", to);
+  return data;
 }

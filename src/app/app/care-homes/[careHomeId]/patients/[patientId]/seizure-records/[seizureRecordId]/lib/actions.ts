@@ -73,12 +73,10 @@ export async function createSeizureRecordShareAction({
     });
 
     console.log(
-      "createSeizureRecordShareAction: email accepted by",
-      emailResult.envelope?.from ?? "unknown",
-      "for",
+      "createSeizureRecordShareAction: email sent for",
       trimmedEmail,
-      "messageId:",
-      emailResult.messageId,
+      "id:",
+      emailResult?.id,
     );
 
     revalidatePath(`/app/care-homes/${careHome.id}/patients/${patient.id}`);
