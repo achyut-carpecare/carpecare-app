@@ -23,6 +23,12 @@ export function Header() {
               <Mail className="size-4" />
               <span>contact@carpecare.co.uk</span>
             </a>
+            <Link
+              href="/auth/login"
+              className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Sign in
+            </Link>
             <a
               href="#updates"
               className="inline-flex items-center justify-center rounded-full border border-transparent bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
