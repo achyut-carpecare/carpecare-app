@@ -1,6 +1,105 @@
-import { and, eq } from "drizzle-orm";
+import { and, count, eq, gte, lte, sql } from "drizzle-orm";
 import { schema, type DB } from "..";
 import type { DBInsertTables, DBTables, DBUpdateTables } from "../types";
+
+export interface CareHomeSeizureRecordFilters {
+  patientId?: string;
+  seizureType?: string;
+  from?: string;
+  to?: string;
+}
+
+function careHomeSeizureRecordConditions(
+  careHomeId: string,
+  { patientId, seizureType, from, to }: CareHomeSeizureRecordFilters,
+) {
+  const conditions = [eq(schema.patients.careHomeId, careHomeId)];
+  if (patientId) {
+    conditions.push(eq(schema.seizureRecords.patientId, patientId));
+  }
+  if (seizureType) {
+    conditions.push(eq(schema.seizureRecords.seizureType, seizureType));
+  }
+  if (from) {
+    conditions.push(gte(schema.seizureRecords.recordedAt, from));
+  }
+  if (to) {
+    conditions.push(lte(schema.seizureRecords.recordedAt, to));
+  }
+  return conditions;
+}
+
+export async function getSeizureRecordsForCareHome(
+  db: DB,
+  careHomeId: string,
+  filters: CareHomeSeizureRecordFilters & { offset?: number; limit?: number },
+) {
+  const { offset, limit, ...rest } = filters;
+
+  const rows = await db
+    .select({
+      id: schema.seizureRecords.id,
+      patientId: schema.patients.id,
+      patientFirstName: schema.patients.firstName,
+      patientLastName: schema.patients.lastName,
+      recordedAt: schema.seizureRecords.recordedAt,
+      durationSeconds: schema.seizureRecords.durationSeconds,
+      seizureType: schema.seizureRecords.seizureType,
+      recorderFirstName: schema.userProfiles.firstName,
+      recorderLastName: schema.userProfiles.lastName,
+    })
+    .from(schema.seizureRecords)
+    .innerJoin(
+      schema.patients,
+      eq(schema.seizureRecords.patientId, schema.patients.id),
+    )
+    .leftJoin(
+      schema.userProfiles,
+      eq(schema.seizureRecords.recordedBy, schema.userProfiles.id),
+    )
+    .where(and(...careHomeSeizureRecordConditions(careHomeId, rest)))
+    .orderBy(sql`${schema.seizureRecords.recordedAt} desc nulls last`)
+    .limit(limit ?? 50)
+    .offset(offset ?? 0);
+
+  return rows;
+}
+
+export async function countSeizureRecordsForCareHome(
+  db: DB,
+  careHomeId: string,
+  filters: CareHomeSeizureRecordFilters,
+) {
+  const [{ value }] = await db
+    .select({ value: count() })
+    .from(schema.seizureRecords)
+    .innerJoin(
+      schema.patients,
+      eq(schema.seizureRecords.patientId, schema.patients.id),
+    )
+    .where(and(...careHomeSeizureRecordConditions(careHomeId, filters)));
+
+  return value;
+}
+
+export async function getDistinctSeizureTypesForCareHome(
+  db: DB,
+  careHomeId: string,
+): Promise<string[]> {
+  const rows = await db
+    .selectDistinct({ seizureType: schema.seizureRecords.seizureType })
+    .from(schema.seizureRecords)
+    .innerJoin(
+      schema.patients,
+      eq(schema.seizureRecords.patientId, schema.patients.id),
+    )
+    .where(eq(schema.patients.careHomeId, careHomeId));
+
+  return rows
+    .map((r) => r.seizureType)
+    .filter((t): t is string => !!t)
+    .sort();
+}
 
 export async function getSeizureRecords(
   db: DB,

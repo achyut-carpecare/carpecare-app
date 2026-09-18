@@ -1,6 +1,6 @@
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, Search, Users } from "lucide-react";
+import { Activity, ArrowRight, Search, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -73,7 +73,17 @@ export default async function PatientsPage({
       <PageHeader
         title="Residents"
         subtitle={`Everyone at ${careHome.name ?? "this care home"}`}
-        actions={<>{isAdmin && <AddPatientDialog careHomeId={careHomeId} />}</>}
+        actions={
+          <>
+            <Button asChild variant="secondary" className="rounded-xl">
+              <Link href={`/app/care-homes/${careHomeId}/events`}>
+                <Activity className="w-4 h-4 mr-2" />
+                All events
+              </Link>
+            </Button>
+            {isAdmin && <AddPatientDialog careHomeId={careHomeId} />}
+          </>
+        }
       />
 
       <form

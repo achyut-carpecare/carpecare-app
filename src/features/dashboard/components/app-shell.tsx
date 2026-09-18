@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Activity,
   Building2,
   Home,
   LayoutDashboard,
@@ -50,6 +51,9 @@ function resolveHref(item: NavItem, currentCareHomeId: string | undefined) {
   if (item.href === "/patients" && currentCareHomeId) {
     return `/app/care-homes/${currentCareHomeId}/patients`;
   }
+  if (item.href === "/events" && currentCareHomeId) {
+    return `/app/care-homes/${currentCareHomeId}/events`;
+  }
   if (item.href === "/members" && currentCareHomeId) {
     return `/app/care-homes/${currentCareHomeId}/members`;
   }
@@ -74,6 +78,7 @@ export function AppShell({
     items: [
       { name: "Dashboard", href: "/app", icon: LayoutDashboard },
       { name: "Residents", href: "/patients", icon: Users },
+      { name: "All events", href: "/events", icon: Activity },
       { name: "Members", href: "/members", icon: UserCog },
     ],
   };
@@ -184,7 +189,9 @@ export function AppShell({
                 const Icon = item.icon;
 
                 const requiresCareHome =
-                  item.href === "/patients" || item.href === "/members";
+                  item.href === "/patients" ||
+                  item.href === "/events" ||
+                  item.href === "/members";
                 if (requiresCareHome && !currentCareHomeId) {
                   return null;
                 }

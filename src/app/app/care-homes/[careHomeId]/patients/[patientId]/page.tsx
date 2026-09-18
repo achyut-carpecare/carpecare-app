@@ -174,9 +174,17 @@ export default async function PatientDetailPage({
           <Card className="rounded-2xl">
             <CardHeader className="pb-3 flex flex-row items-center justify-between">
               <CardTitle className="text-base">Seizure timeline</CardTitle>
-              <Badge variant="secondary" className="rounded-full">
-                Sparse events are normal
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary" className="rounded-full">
+                  Sparse events are normal
+                </Badge>
+                <Link
+                  href={`/app/care-homes/${careHomeId}/events?patientId=${patientId}`}
+                  className="text-sm font-medium text-primary hover:underline"
+                >
+                  View all events
+                </Link>
+              </div>
             </CardHeader>
             <CardContent className="p-6 pt-0">
               {timeline.length === 0 ? (
