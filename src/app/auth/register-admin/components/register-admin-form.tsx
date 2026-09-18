@@ -87,10 +87,10 @@ export function RegisterAdminForm({
   return (
     <Card className="w-full max-w-md rounded-2xl">
       <CardHeader className="text-center">
-        <CardTitle>Create your admin account</CardTitle>
+        <CardTitle>Create your account</CardTitle>
         <CardDescription>
-          You have been invited to join Carpe Care as a system administrator.
-          Complete the form below to get started.
+          You have been invited to join Carpe Care. Complete the form below to
+          get started - an existing admin will grant you access from there.
         </CardDescription>
       </CardHeader>
       <CardContent>

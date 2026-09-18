@@ -121,7 +121,7 @@ export default async function RegisterAdminPage({
   }
 
   if (user && user.email === invitation.invitedEmail) {
-    redirect("/app/admin");
+    redirect("/app");
   }
 
   return (

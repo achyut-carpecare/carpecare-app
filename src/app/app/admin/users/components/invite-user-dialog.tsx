@@ -60,8 +60,10 @@ export function InviteUserDialog() {
           <DialogHeader>
             <DialogTitle>Invite platform user</DialogTitle>
             <DialogDescription>
-              Send an invitation to create a system administrator account. They
-              will set their name and password when they accept.
+              Send an invitation to create a platform account. They will set
+              their name and password when they accept - system admin access is
+              not granted automatically, you can turn it on for them afterward
+              from this list.
             </DialogDescription>
           </DialogHeader>
 

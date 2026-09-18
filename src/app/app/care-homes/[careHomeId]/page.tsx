@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge";
 import { db } from "@/features/database";
 import { createClient } from "@/features/auth/server";
 import { PageHeader } from "@/features/dashboard/components/page-header";
+import { AccessDenied } from "@/features/dashboard/components/access-denied";
 import {
   getCareHomeById,
   getCareHomeCounts,
@@ -53,7 +54,7 @@ export default async function CareHomeDashboardPage({
   const isMember = memberships.some((m) => m.careHome.id === careHomeId);
 
   if (!isMember && !profile.isSystemAdmin) {
-    notFound();
+    return <AccessDenied />;
   }
 
   const careHome = await getCareHomeById(db, careHomeId);

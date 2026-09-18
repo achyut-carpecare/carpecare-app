@@ -1,4 +1,4 @@
-import { redirect, notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Building2, Users } from "lucide-react";
 import {
@@ -13,6 +13,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/features/auth/server";
 import { db } from "@/features/database";
 import { PageHeader } from "@/features/dashboard/components/page-header";
+import { AccessDenied } from "@/features/dashboard/components/access-denied";
 import {
   getCareHomeCounts,
   getCareHomes,
@@ -35,7 +36,7 @@ export default async function AdminDashboardPage() {
   const result = await getUserWithMemberships(db, user.id);
 
   if (!result || !result.profile.isSystemAdmin) {
-    notFound();
+    return <AccessDenied />;
   }
 
   const careHomes = await getCareHomes(db);

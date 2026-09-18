@@ -12,6 +12,7 @@ import {
   getPatientsWithLastSeizure,
   getUserWithMemberships,
 } from "@/features/database/queries";
+import { AccessDenied } from "@/features/dashboard/components/access-denied";
 import { AddPatientDialog } from "./components/add-patient-dialog";
 import { PageHeader } from "@/features/dashboard/components/page-header";
 import { formatDate } from "@/features/dashboard/lib/format";
@@ -47,7 +48,7 @@ export default async function PatientsPage({
   const membership = memberships.find((m) => m.careHome.id === careHomeId);
 
   if (!membership && !profile.isSystemAdmin) {
-    notFound();
+    return <AccessDenied />;
   }
 
   const isAdmin = profile.isSystemAdmin || membership?.role === "admin";

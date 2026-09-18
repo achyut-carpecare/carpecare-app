@@ -11,6 +11,7 @@ import {
   getUserWithMemberships,
 } from "@/features/database/queries";
 import { PageHeader } from "@/features/dashboard/components/page-header";
+import { AccessDenied } from "@/features/dashboard/components/access-denied";
 import {
   formatDateTime,
   formatDuration,
@@ -51,7 +52,7 @@ export default async function SeizureRecordPage({
   const { profile, memberships } = userData;
   const membership = memberships.find((m) => m.careHome.id === careHomeId);
   if (!membership && !profile.isSystemAdmin) {
-    notFound();
+    return <AccessDenied />;
   }
 
   const careHome = await getCareHomeById(db, careHomeId);

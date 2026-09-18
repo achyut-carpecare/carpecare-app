@@ -104,7 +104,6 @@ export async function registerWithPlatformInvitationAction(
         user_metadata: {
           first_name: firstName,
           last_name: lastName,
-          is_system_admin: true,
         },
       });
 
@@ -131,20 +130,22 @@ export async function registerWithPlatformInvitationAction(
     const userId = userData.user.id;
 
     await db.transaction(async (tx) => {
+      // System admin access is never granted automatically on registration -
+      // an existing admin must explicitly grant it afterward from the
+      // Platform users page.
       await tx
         .insert(schema.userProfiles)
         .values({
           id: userId,
           firstName,
           lastName,
-          isSystemAdmin: true,
+          isSystemAdmin: false,
         })
         .onConflictDoUpdate({
           target: schema.userProfiles.id,
           set: {
             firstName,
             lastName,
-            isSystemAdmin: true,
             updatedAt: new Date().toISOString(),
           },
         });
@@ -172,5 +173,5 @@ export async function registerWithPlatformInvitationAction(
   revalidatePath("/app/admin/users");
   revalidatePath("/app", "layout");
 
-  return redirect("/app/admin");
+  return redirect("/app");
 }

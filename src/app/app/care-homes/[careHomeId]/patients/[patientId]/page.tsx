@@ -16,6 +16,7 @@ import {
   getBestCalmSpellDays,
 } from "@/features/database/queries";
 import { PageHeader } from "@/features/dashboard/components/page-header";
+import { AccessDenied } from "@/features/dashboard/components/access-denied";
 import { DaysSinceRing } from "@/features/dashboard/components/days-since-ring";
 import { DotCalendar } from "@/features/dashboard/components/dot-calendar";
 import { SparseTimeline } from "@/features/dashboard/components/sparse-timeline";
@@ -49,7 +50,7 @@ export default async function PatientDetailPage({
   const { profile, memberships } = userData;
   const membership = memberships.find((m) => m.careHome.id === careHomeId);
   if (!membership && !profile.isSystemAdmin) {
-    notFound();
+    return <AccessDenied />;
   }
 
   const careHome = await getCareHomeById(db, careHomeId);

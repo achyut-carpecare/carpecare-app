@@ -183,6 +183,12 @@ export function AppShell({
                 const active = isActive(item);
                 const Icon = item.icon;
 
+                const requiresCareHome =
+                  item.href === "/patients" || item.href === "/members";
+                if (requiresCareHome && !currentCareHomeId) {
+                  return null;
+                }
+
                 if (
                   item.href === "/members" &&
                   !userRole &&

@@ -3,6 +3,7 @@ import { createClient } from "@/features/auth/server";
 import { db } from "@/features/database";
 import { getAuthUserEmailsByIds } from "@/features/auth/admin";
 import { PageHeader } from "@/features/dashboard/components/page-header";
+import { AccessDenied } from "@/features/dashboard/components/access-denied";
 import {
   getCareHomeById,
   getCareHomeInvitations,
@@ -43,7 +44,7 @@ export default async function MembersPage({ params }: MembersPageProps) {
   const canManage = isSystemAdmin || isCareHomeAdmin;
 
   if (!canManage) {
-    notFound();
+    return <AccessDenied />;
   }
 
   const careHome = await getCareHomeById(db, careHomeId);

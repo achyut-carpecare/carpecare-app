@@ -1,4 +1,4 @@
-import { notFound, redirect } from "next/navigation";
+import { redirect } from "next/navigation";
 import { Users } from "lucide-react";
 import {
   Table,
@@ -18,6 +18,7 @@ import {
   getUserWithMemberships,
 } from "@/features/database/queries";
 import { PageHeader } from "@/features/dashboard/components/page-header";
+import { AccessDenied } from "@/features/dashboard/components/access-denied";
 import { InviteUserDialog } from "./components/invite-user-dialog";
 import { DeleteUserButton } from "./components/delete-user-button";
 import { AdminStatusSwitch } from "./components/admin-status-switch";
@@ -36,7 +37,7 @@ export default async function AdminUsersPage() {
   const result = await getUserWithMemberships(db, user.id);
 
   if (!result || !result.profile.isSystemAdmin) {
-    notFound();
+    return <AccessDenied />;
   }
 
   const profiles = await getUserProfiles(db);
