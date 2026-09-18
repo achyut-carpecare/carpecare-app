@@ -2,6 +2,7 @@
 
 import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { signIn } from "@/features/auth/actions";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -51,7 +52,15 @@ function LoginForm() {
             />
           </div>
           <div className="space-y-2">
-            <p className="text-sm font-medium">Password</p>
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium">Password</p>
+              <Link
+                href="/auth/forgot-password"
+                className="text-xs text-primary hover:underline"
+              >
+                Forgot password?
+              </Link>
+            </div>
             <Input
               name="password"
               type="password"
