@@ -4,23 +4,29 @@ import { ShareLinkEmail } from "./templates/share-link";
 import { ShareOtpEmail } from "./templates/share-otp";
 import { InvitationEmail } from "./templates/invite-link";
 import { PlatformInviteEmail } from "./templates/platform-invite";
+import { HelpRequestEmail } from "./templates/help-request";
 
 export * from "./lib/crypto";
+
+const SUPPORT_EMAIL = "contact@carpecare.co.uk";
 
 async function sendEmail({
   to,
   subject,
   html,
+  replyTo,
 }: {
   to: string;
   subject: string;
   html: string;
+  replyTo?: string;
 }) {
   const { data, error } = await resend.emails.send({
     from: DEFAULT_FROM,
     to: [to],
     subject,
     html,
+    ...(replyTo ? { replyTo } : {}),
   });
 
   if (error) {
@@ -108,6 +114,28 @@ export async function sendInvitationEmail({
   });
 
   console.log("Invitation email sent:", data?.id, "to:", to);
+  return data;
+}
+
+export async function sendHelpRequestEmail({
+  fromName,
+  fromEmail,
+  message,
+}: {
+  fromName: string;
+  fromEmail: string;
+  message: string;
+}) {
+  const html = await render(HelpRequestEmail({ fromName, fromEmail, message }));
+
+  const data = await sendEmail({
+    to: SUPPORT_EMAIL,
+    subject: `New help request from ${fromName}`,
+    html,
+    replyTo: fromEmail,
+  });
+
+  console.log("Help request email sent:", data?.id, "from:", fromEmail);
   return data;
 }
 

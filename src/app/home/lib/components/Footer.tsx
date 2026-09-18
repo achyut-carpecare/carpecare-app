@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { ArrowUp, Mail } from "lucide-react";
 
 export function Footer() {
@@ -14,13 +15,13 @@ export function Footer() {
             >
               Carpe Care
             </span>
-            <a
-              href="mailto:contact@carpecare.co.uk"
+            <Link
+              href="/help"
               className="flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
             >
               <Mail className="size-4" />
-              contact@carpecare.co.uk
-            </a>
+              Contact us
+            </Link>
           </div>
 
           <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">

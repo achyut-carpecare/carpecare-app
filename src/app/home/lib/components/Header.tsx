@@ -1,7 +1,22 @@
 import Link from "next/link";
 import { Mail } from "lucide-react";
+import { createClient } from "@/features/auth/server";
+import { db } from "@/features/database";
+import { getUserProfileById } from "@/features/database/queries";
+import { UserMenu } from "./UserMenu";
 
-export function Header() {
+function formatName(first?: string | null, last?: string | null) {
+  return [first, last].filter(Boolean).join(" ") || "there";
+}
+
+export async function Header() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const profile = user ? await getUserProfileById(db, user.id) : undefined;
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="layout-wide px-4">
@@ -24,11 +39,26 @@ export function Header() {
               <span>contact@carpecare.co.uk</span>
             </a>
             <Link
-              href="/auth/login"
+              href="/help"
               className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
-              Sign in
+              Help
             </Link>
+
+            {user ? (
+              <UserMenu
+                name={formatName(profile?.firstName, profile?.lastName)}
+                email={user.email}
+              />
+            ) : (
+              <Link
+                href="/auth/login"
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+              >
+                Sign in
+              </Link>
+            )}
+
             <a
               href="#updates"
               className="inline-flex items-center justify-center rounded-full border border-transparent bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"

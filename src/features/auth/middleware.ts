@@ -75,6 +75,7 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname.startsWith("/invite") ||
     request.nextUrl.pathname.startsWith("/home") ||
     request.nextUrl.pathname.startsWith("/share") ||
+    request.nextUrl.pathname.startsWith("/help") ||
     request.nextUrl.pathname === "/";
 
   if (!user && !isPublicPath) {

@@ -6,10 +6,12 @@ import { usePathname } from "next/navigation";
 import {
   Activity,
   Building2,
+  HelpCircle,
   Home,
   LayoutDashboard,
   LogOut,
   Menu,
+  Settings,
   Shield,
   Users,
   UserCog,
@@ -227,6 +229,39 @@ export function AppShell({
         <Separator />
 
         <div className="p-4 space-y-3">
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start"
+          >
+            <Link href="/app/account">
+              <Settings className="w-4 h-4 mr-2" />
+              Account
+            </Link>
+          </Button>
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start"
+          >
+            <Link href="/help">
+              <HelpCircle className="w-4 h-4 mr-2" />
+              Help
+            </Link>
+          </Button>
+          <Button
+            asChild
+            variant="ghost"
+            size="sm"
+            className="w-full justify-start"
+          >
+            <Link href="/home">
+              <Home className="w-4 h-4 mr-2" />
+              Visit website
+            </Link>
+          </Button>
           {userEmail && (
             <div className="text-xs text-muted-foreground truncate">
               {userEmail}
