@@ -145,16 +145,20 @@ export async function updateSeizureRecordAction({
   seizureRecordId,
   recordedAt,
   durationSeconds,
+  videoDurationSeconds,
   seizureType,
   notes,
+  videoId,
 }: {
   careHomeId: string;
   patientId: string;
   seizureRecordId: string;
   recordedAt: string;
   durationSeconds: number;
+  videoDurationSeconds?: number;
   seizureType?: string;
   notes?: string;
+  videoId?: string;
 }) {
   try {
     const supabase = await createClient();
@@ -200,8 +204,10 @@ export async function updateSeizureRecordAction({
       {
         recordedAt,
         durationSeconds,
+        ...(videoDurationSeconds != null ? { videoDurationSeconds } : {}),
         seizureType: seizureType.trim() || null,
         notes: notes?.trim() || null,
+        ...(videoId ? { videoId } : {}),
       },
       { careHomeId, patientId },
     );

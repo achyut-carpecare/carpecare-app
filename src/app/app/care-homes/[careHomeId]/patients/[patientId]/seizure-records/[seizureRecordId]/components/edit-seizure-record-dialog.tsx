@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Pencil } from "lucide-react";
+import { Pencil, Video } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/select";
 import { SEIZURE_TYPES } from "@/features/seizure-records/constants";
 import { updateSeizureRecordAction } from "../lib/actions";
+import { uploadVideoFile } from "@/features/storage/actions";
 import { toast } from "@/components/ui/sonner";
 
 function toLocalDateTimeInputValue(date: Date): string {
@@ -36,6 +37,22 @@ function toLocalDateTimeInputValue(date: Date): string {
   return `${year}-${month}-${day}T${hours}:${minutes}`;
 }
 
+function readVideoDuration(file: File): Promise<number | null> {
+  return new Promise((resolve) => {
+    const video = document.createElement("video");
+    video.preload = "metadata";
+    video.onloadedmetadata = () => {
+      resolve(Math.round(video.duration) || null);
+      URL.revokeObjectURL(video.src);
+    };
+    video.onerror = () => {
+      resolve(null);
+      URL.revokeObjectURL(video.src);
+    };
+    video.src = URL.createObjectURL(file);
+  });
+}
+
 interface EditSeizureRecordDialogProps {
   careHomeId: string;
   patientId: string;
@@ -45,6 +62,7 @@ interface EditSeizureRecordDialogProps {
     durationSeconds: number | null;
     seizureType: string | null;
     notes: string | null;
+    hasVideo: boolean;
   };
 }
 
@@ -64,6 +82,8 @@ export function EditSeizureRecordDialog({
 }: EditSeizureRecordDialogProps) {
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploadingVideo, setIsUploadingVideo] = useState(false);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
   const initialSeizureTypeSelectValue = getSeizureTypeSelectValue(
     initial.seizureType,
   );
@@ -95,14 +115,36 @@ export function EditSeizureRecordDialog({
     event.preventDefault();
     setIsSubmitting(true);
 
+    let videoId: string | undefined;
+    let videoDurationSeconds: number | undefined;
+
+    if (videoFile) {
+      setIsUploadingVideo(true);
+      const uploadFormData = new FormData();
+      uploadFormData.set("video", videoFile);
+      const uploadResult = await uploadVideoFile(uploadFormData);
+      setIsUploadingVideo(false);
+
+      if (uploadResult.error) {
+        setIsSubmitting(false);
+        toast.error(uploadResult.error);
+        return;
+      }
+
+      videoId = uploadResult.fileId;
+      videoDurationSeconds = (await readVideoDuration(videoFile)) ?? undefined;
+    }
+
     const result = await updateSeizureRecordAction({
       careHomeId,
       patientId,
       seizureRecordId,
       recordedAt: new Date(formData.recordedAt).toISOString(),
       durationSeconds: Number(formData.durationSeconds),
+      videoDurationSeconds,
       seizureType: resolvedSeizureType,
       notes: formData.notes,
+      videoId,
     });
 
     setIsSubmitting(false);
@@ -128,6 +170,7 @@ export function EditSeizureRecordDialog({
         seizureTypeOther: isOther ? (initial.seizureType ?? "") : "",
         notes: initial.notes ?? "",
       });
+      setVideoFile(null);
     }
   }
 
@@ -144,7 +187,7 @@ export function EditSeizureRecordDialog({
           <DialogHeader>
             <DialogTitle>Edit event</DialogTitle>
             <DialogDescription>
-              Update the date, duration, type, and notes for this seizure
+              Update the date, duration, type, notes, and video for this seizure
               record.
             </DialogDescription>
           </DialogHeader>
@@ -163,7 +206,7 @@ export function EditSeizureRecordDialog({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="duration">Duration (seconds)</Label>
+                <Label htmlFor="duration">Event duration (seconds)</Label>
                 <Input
                   id="duration"
                   type="number"
@@ -224,6 +267,27 @@ export function EditSeizureRecordDialog({
                 className="rounded-xl min-h-[120px]"
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="video" className="flex items-center gap-1.5">
+                <Video className="w-4 h-4" />
+                {initial.hasVideo ? "Replace video" : "Add video"}
+              </Label>
+              <Input
+                id="video"
+                type="file"
+                accept="video/*"
+                onChange={(e) => setVideoFile(e.target.files?.[0] ?? null)}
+                className="rounded-xl"
+              />
+              <p className="text-xs text-muted-foreground">
+                {videoFile
+                  ? `Selected: ${videoFile.name}`
+                  : initial.hasVideo
+                    ? "This record already has a video. Choose a file to replace it."
+                    : "No video attached yet. Choose a file to add one."}
+              </p>
+            </div>
           </div>
 
           <DialogFooter>
@@ -240,7 +304,11 @@ export function EditSeizureRecordDialog({
               disabled={isSubmitting || !resolvedSeizureType}
               className="rounded-xl"
             >
-              {isSubmitting ? "Saving..." : "Save changes"}
+              {isUploadingVideo
+                ? "Uploading video..."
+                : isSubmitting
+                  ? "Saving..."
+                  : "Save changes"}
             </Button>
           </DialogFooter>
         </form>

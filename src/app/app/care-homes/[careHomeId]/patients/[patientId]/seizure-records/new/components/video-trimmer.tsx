@@ -296,22 +296,49 @@ export function VideoTrimmer({ onTrimComplete }: VideoTrimmerProps) {
 
       await ffmpeg.writeFile(inputName, await fetchFile(videoFile));
 
-      await ffmpeg.exec([
-        "-i",
-        inputName,
-        "-ss",
-        formatTimeForFfmpeg(startTime),
-        "-to",
-        formatTimeForFfmpeg(endTime),
-        "-c:v",
-        "libx264",
-        "-c:a",
-        "aac",
-        "-movflags",
-        "+faststart",
-        "-y",
-        outputName,
-      ]);
+      try {
+        // Stream copy: cuts at the nearest keyframe without re-encoding.
+        // Dramatically faster than transcoding (seconds instead of
+        // minutes for a few-minute clip), at the cost of the cut point
+        // possibly landing up to ~1-2s off the exact requested time.
+        await ffmpeg.exec([
+          "-i",
+          inputName,
+          "-ss",
+          formatTimeForFfmpeg(startTime),
+          "-to",
+          formatTimeForFfmpeg(endTime),
+          "-c",
+          "copy",
+          "-avoid_negative_ts",
+          "make_zero",
+          "-movflags",
+          "+faststart",
+          "-y",
+          outputName,
+        ]);
+      } catch (copyErr) {
+        console.warn(
+          "Stream-copy trim failed, falling back to re-encoding:",
+          copyErr,
+        );
+        await ffmpeg.exec([
+          "-i",
+          inputName,
+          "-ss",
+          formatTimeForFfmpeg(startTime),
+          "-to",
+          formatTimeForFfmpeg(endTime),
+          "-c:v",
+          "libx264",
+          "-c:a",
+          "aac",
+          "-movflags",
+          "+faststart",
+          "-y",
+          outputName,
+        ]);
+      }
 
       const data = await ffmpeg.readFile(outputName);
       const bytes = data as Uint8Array;
@@ -352,6 +379,21 @@ export function VideoTrimmer({ onTrimComplete }: VideoTrimmerProps) {
     videoStartDate,
     onTrimComplete,
   ]);
+
+  const handleUseFullVideo = useCallback(() => {
+    if (!videoFile || duration === 0) return;
+
+    // Create an independent object URL rather than reusing videoUrl, so
+    // revoking it later (e.g. "Back to editor") can't invalidate the main
+    // preview player's URL too.
+    if (trimmedUrl) URL.revokeObjectURL(trimmedUrl);
+    setTrimmedUrl(URL.createObjectURL(videoFile));
+    setStatus("preview");
+
+    if (onTrimComplete) {
+      onTrimComplete(videoFile, duration, videoStartDate, 0);
+    }
+  }, [videoFile, duration, videoStartDate, onTrimComplete, trimmedUrl]);
 
   const handleBackToEditor = useCallback(() => {
     if (trimmedUrl) URL.revokeObjectURL(trimmedUrl);
@@ -564,6 +606,13 @@ export function VideoTrimmer({ onTrimComplete }: VideoTrimmerProps) {
       <div className="flex flex-wrap items-center justify-center gap-3">
         <Button onClick={reset} variant="outline">
           Choose different video
+        </Button>
+        <Button
+          onClick={handleUseFullVideo}
+          variant="outline"
+          disabled={status === "trimming"}
+        >
+          Use full video
         </Button>
         <Button onClick={handleTrim} disabled={status === "trimming"}>
           {status === "trimming" ? (

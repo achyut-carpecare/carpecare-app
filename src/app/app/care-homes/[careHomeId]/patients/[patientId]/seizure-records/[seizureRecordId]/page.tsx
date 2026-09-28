@@ -109,6 +109,7 @@ export default async function SeizureRecordPage({
                 durationSeconds: seizureRecord.durationSeconds,
                 seizureType: seizureRecord.seizureType,
                 notes: seizureRecord.notes,
+                hasVideo: !!file,
               }}
             />
             <DeleteSeizureRecordButton
