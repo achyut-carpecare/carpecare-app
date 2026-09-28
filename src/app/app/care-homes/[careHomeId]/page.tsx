@@ -2,12 +2,17 @@ import Link from "next/link";
 import { redirect, notFound } from "next/navigation";
 import {
   Activity,
+  AlertCircle,
   ArrowRight,
+  Award,
   Building2,
+  Clock,
+  Eye,
   Plus,
   Share2,
+  TrendingUp,
+  Video,
   Users,
-  Zap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -19,14 +24,27 @@ import { AccessDenied } from "@/features/dashboard/components/access-denied";
 import {
   getCareHomeById,
   getCareHomeCounts,
+  getCareHomeMonthlyInsights,
+  getMostActiveRecorder,
   getRecentActivity,
+  getResidentsToWatch,
+  getUnopenedShares,
   getUserWithMemberships,
+  getVideoCoverage,
 } from "@/features/database/queries";
-import { startOfDay } from "@/features/database/lib/date";
-import { formatDuration, formatTime } from "@/features/dashboard/lib/format";
+import { firstDayOfMonth } from "@/features/database/lib/date";
+import {
+  formatDate,
+  formatDuration,
+  formatTime,
+} from "@/features/dashboard/lib/format";
 
 interface DashboardPageProps {
   params: Promise<{ careHomeId: string }>;
+}
+
+function toDateParam(date: Date) {
+  return date.toISOString().slice(0, 10);
 }
 
 export default async function CareHomeDashboardPage({
@@ -63,19 +81,33 @@ export default async function CareHomeDashboardPage({
     notFound();
   }
 
-  const counts = await getCareHomeCounts(db, careHomeId);
-  const recentActivity = await getRecentActivity(db, careHomeId, 20);
+  const [
+    counts,
+    insights,
+    recentActivity,
+    residentsToWatch,
+    unopenedShares,
+    videoCoverage,
+    mostActiveRecorder,
+  ] = await Promise.all([
+    getCareHomeCounts(db, careHomeId),
+    getCareHomeMonthlyInsights(db, careHomeId),
+    getRecentActivity(db, careHomeId, 8),
+    getResidentsToWatch(db, careHomeId),
+    getUnopenedShares(db, careHomeId),
+    getVideoCoverage(db, careHomeId),
+    getMostActiveRecorder(db, careHomeId),
+  ]);
 
-  const todayStart = startOfDay(new Date()).toISOString();
-  const todaysActivity = recentActivity.filter(
-    (a) => a.timestamp >= todayStart,
-  );
+  const today = toDateParam(new Date());
+  const monthStart = toDateParam(firstDayOfMonth(new Date()));
+  const eventsBase = `/app/care-homes/${careHomeId}/events`;
 
   return (
     <div className="space-y-6">
       <PageHeader
         title={careHome.name ?? "Care home"}
-        subtitle="Welcome back. Here is what is happening today."
+        subtitle="Welcome back. Here is what is happening."
         actions={
           <>
             <Button asChild variant="secondary" className="rounded-xl">
@@ -85,8 +117,8 @@ export default async function CareHomeDashboardPage({
               </Link>
             </Button>
             <Button asChild className="rounded-xl">
-              <Link href="#">
-                <Zap className="w-4 h-4 mr-2" />
+              <Link href={`/app/care-homes/${careHomeId}/patients`}>
+                <Activity className="w-4 h-4 mr-2" />
                 Record event
               </Link>
             </Button>
@@ -111,25 +143,151 @@ export default async function CareHomeDashboardPage({
           icon={Activity}
           label="Events this month"
           value={counts.eventsThisMonth}
+          href={`${eventsBase}?from=${monthStart}&to=${today}`}
         />
         <StatCard
-          icon={Share2}
-          label="Pending shares"
-          value={counts.sharesThisMonth}
+          icon={AlertCircle}
+          label="Residents with an event today"
+          value={counts.patientsWithEventToday}
+          href={`${eventsBase}?from=${today}&to=${today}`}
         />
       </div>
 
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+        <InsightCard
+          icon={Clock}
+          label="Average duration this month"
+          value={formatDuration(insights.averageDuration)}
+        />
+        <InsightCard
+          icon={Activity}
+          label="Most common type this month"
+          value={insights.commonType ?? "—"}
+        />
+        <InsightCard
+          icon={Share2}
+          label="Active shares"
+          value={counts.activeShares.toString()}
+        />
+        <InsightCard
+          icon={Video}
+          label="Events with video this month"
+          value={
+            videoCoverage.total === 0
+              ? "—"
+              : `${videoCoverage.percent}% (${videoCoverage.withVideo}/${videoCoverage.total})`
+          }
+        />
+        <InsightCard
+          icon={Award}
+          label="Most active recorder this month"
+          value={
+            mostActiveRecorder
+              ? `${mostActiveRecorder.name} (${mostActiveRecorder.eventCount})`
+              : "—"
+          }
+        />
+      </div>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="rounded-2xl">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-primary" />
+              Residents to watch
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {residentsToWatch.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                No events in the last 7 days.
+              </p>
+            ) : (
+              residentsToWatch.map((r) => (
+                <Link
+                  key={r.patientId}
+                  href={`/app/care-homes/${careHomeId}/patients/${r.patientId}`}
+                  className="flex items-center justify-between p-3 rounded-xl border border-border hover:border-primary/30 transition-colors"
+                >
+                  <div>
+                    <div className="font-medium">{r.name}</div>
+                    <div className="text-sm text-muted-foreground">
+                      Last event {formatDate(r.lastRecordedAt)}
+                    </div>
+                  </div>
+                  <Badge variant="secondary" className="rounded-full">
+                    {r.eventCount} in 7 days
+                  </Badge>
+                </Link>
+              ))
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Eye className="w-5 h-5 text-primary" />
+              Unopened shares
+              {unopenedShares.totalUnopened > 0 && (
+                <Badge variant="warning" className="rounded-full">
+                  {unopenedShares.totalUnopened}
+                </Badge>
+              )}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {unopenedShares.shares.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                Every share has been opened.
+              </p>
+            ) : (
+              unopenedShares.shares.map((s) => (
+                <div
+                  key={s.id}
+                  className="flex items-center justify-between p-3 rounded-xl border border-border"
+                >
+                  <div>
+                    <div className="font-medium">
+                      {s.patientName} · {s.recipientEmail ?? "a medic"}
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      Sent {formatDate(s.createdAt)}
+                    </div>
+                  </div>
+                  {s.expired ? (
+                    <Badge variant="destructive" className="rounded-full">
+                      Expired
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary" className="rounded-full">
+                      Waiting
+                    </Badge>
+                  )}
+                </div>
+              ))
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
       <Card className="rounded-2xl">
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg">What happened today</CardTitle>
+        <CardHeader className="pb-3 flex flex-row items-center justify-between">
+          <CardTitle className="text-lg">Recent activity</CardTitle>
+          <Link
+            href={eventsBase}
+            className="text-sm font-medium text-primary hover:underline"
+          >
+            View all events
+          </Link>
         </CardHeader>
         <CardContent className="space-y-3">
-          {todaysActivity.length === 0 ? (
+          {recentActivity.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              Nothing recorded yet today. A calm start is good news.
+              Nothing recorded yet. A calm start is good news.
             </p>
           ) : (
-            todaysActivity.map((item) => (
+            recentActivity.map((item) => (
               <div
                 key={`${item.kind}-${item.id}`}
                 className="flex items-center justify-between p-3 rounded-xl border border-border"
@@ -198,7 +356,7 @@ function StatCard({
   href?: string;
 }) {
   const content = (
-    <Card className="rounded-2xl">
+    <Card className="rounded-2xl h-full transition-colors hover:border-primary/30">
       <CardContent className="p-5 space-y-1">
         <Icon className="w-5 h-5 text-primary" />
         <div className="text-3xl font-bold">{value}</div>
@@ -212,4 +370,28 @@ function StatCard({
   }
 
   return content;
+}
+
+function InsightCard({
+  icon: Icon,
+  label,
+  value,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: string;
+}) {
+  return (
+    <Card className="rounded-2xl">
+      <CardContent className="p-5 flex items-center gap-3">
+        <div className="p-2 rounded-xl bg-primary/10">
+          <Icon className="w-4 h-4 text-primary" />
+        </div>
+        <div>
+          <div className="font-semibold">{value}</div>
+          <div className="text-xs text-muted-foreground">{label}</div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 }

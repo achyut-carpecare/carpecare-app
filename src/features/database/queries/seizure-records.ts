@@ -21,10 +21,16 @@ function careHomeSeizureRecordConditions(
     conditions.push(eq(schema.seizureRecords.seizureType, seizureType));
   }
   if (from) {
+    // Plain date inputs (YYYY-MM-DD) have no time component, which already
+    // means "start of day" when compared as a string/timestamp.
     conditions.push(gte(schema.seizureRecords.recordedAt, from));
   }
   if (to) {
-    conditions.push(lte(schema.seizureRecords.recordedAt, to));
+    // A plain date string compared with <= would only match exact
+    // midnight, excluding the rest of that day - extend it to the end of
+    // day so "to: today" actually includes today's events.
+    const inclusiveTo = to.includes("T") ? to : `${to}T23:59:59.999`;
+    conditions.push(lte(schema.seizureRecords.recordedAt, inclusiveTo));
   }
   return conditions;
 }

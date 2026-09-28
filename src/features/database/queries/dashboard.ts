@@ -53,7 +53,7 @@ export async function getCareHomeCounts(db: DB, careHomeId: string) {
       ),
     );
 
-  const [{ count: sharesThisMonth }] = await db
+  const [{ count: activeShares }] = await db
     .select({ count: count() })
     .from(schema.seizureRecordShares)
     .innerJoin(
@@ -67,12 +67,14 @@ export async function getCareHomeCounts(db: DB, careHomeId: string) {
     .where(
       and(
         eq(schema.patients.careHomeId, careHomeId),
-        gte(schema.seizureRecordShares.createdAt, monthStart.toISOString()),
+        gte(schema.seizureRecordShares.expiresAt, new Date().toISOString()),
       ),
     );
 
   const [{ count: patientsWithEventToday }] = await db
-    .select({ count: count() })
+    .select({
+      count: sql<number>`cast(count(distinct ${schema.patients.id}) as integer)`,
+    })
     .from(schema.patients)
     .innerJoin(
       schema.seizureRecords,
@@ -81,7 +83,7 @@ export async function getCareHomeCounts(db: DB, careHomeId: string) {
     .where(
       and(
         eq(schema.patients.careHomeId, careHomeId),
-        gte(schema.seizureRecords.createdAt, today.toISOString()),
+        gte(schema.seizureRecords.recordedAt, today.toISOString()),
       ),
     );
 
@@ -89,8 +91,226 @@ export async function getCareHomeCounts(db: DB, careHomeId: string) {
     patientCount,
     memberCount,
     eventsThisMonth,
-    sharesThisMonth,
+    activeShares,
     patientsWithEventToday,
+  };
+}
+
+export async function getCareHomeMonthlyInsights(db: DB, careHomeId: string) {
+  const monthStart = firstDayOfMonth(new Date());
+
+  const [row] = await db
+    .select({
+      averageDuration: sql<
+        number | null
+      >`avg(${schema.seizureRecords.durationSeconds})`,
+    })
+    .from(schema.seizureRecords)
+    .innerJoin(
+      schema.patients,
+      eq(schema.seizureRecords.patientId, schema.patients.id),
+    )
+    .where(
+      and(
+        eq(schema.patients.careHomeId, careHomeId),
+        gte(schema.seizureRecords.createdAt, monthStart.toISOString()),
+      ),
+    );
+
+  const commonTypeRow = await db
+    .select({
+      seizureType: schema.seizureRecords.seizureType,
+      count: sql<number>`cast(count(*) as integer)`,
+    })
+    .from(schema.seizureRecords)
+    .innerJoin(
+      schema.patients,
+      eq(schema.seizureRecords.patientId, schema.patients.id),
+    )
+    .where(
+      and(
+        eq(schema.patients.careHomeId, careHomeId),
+        gte(schema.seizureRecords.createdAt, monthStart.toISOString()),
+        sql`${schema.seizureRecords.seizureType} is not null`,
+      ),
+    )
+    .groupBy(schema.seizureRecords.seizureType)
+    .orderBy(sql`count(*) desc`)
+    .limit(1);
+
+  return {
+    averageDuration: row?.averageDuration ?? null,
+    commonType: commonTypeRow[0]?.seizureType ?? null,
+  };
+}
+
+export async function getResidentsToWatch(
+  db: DB,
+  careHomeId: string,
+  { days = 7, limit = 5 }: { days?: number; limit?: number } = {},
+) {
+  const since = new Date();
+  since.setDate(since.getDate() - days);
+
+  const rows = await db
+    .select({
+      patientId: schema.patients.id,
+      firstName: schema.patients.firstName,
+      lastName: schema.patients.lastName,
+      eventCount: sql<number>`cast(count(*) as integer)`,
+      lastRecordedAt: sql<
+        string | null
+      >`max(${schema.seizureRecords.recordedAt})`,
+    })
+    .from(schema.seizureRecords)
+    .innerJoin(
+      schema.patients,
+      eq(schema.seizureRecords.patientId, schema.patients.id),
+    )
+    .where(
+      and(
+        eq(schema.patients.careHomeId, careHomeId),
+        gte(schema.seizureRecords.recordedAt, since.toISOString()),
+      ),
+    )
+    .groupBy(
+      schema.patients.id,
+      schema.patients.firstName,
+      schema.patients.lastName,
+    )
+    .orderBy(sql`count(*) desc`)
+    .limit(limit);
+
+  return rows.map((r) => ({
+    patientId: r.patientId,
+    name: formatName(r.firstName, r.lastName),
+    eventCount: r.eventCount,
+    lastRecordedAt: r.lastRecordedAt,
+  }));
+}
+
+export async function getUnopenedShares(db: DB, careHomeId: string, limit = 5) {
+  const conditions = [
+    eq(schema.patients.careHomeId, careHomeId),
+    sql`${schema.seizureRecordShares.accessedAt} is null`,
+  ];
+
+  const [{ count: totalUnopened }] = await db
+    .select({ count: count() })
+    .from(schema.seizureRecordShares)
+    .innerJoin(
+      schema.seizureRecords,
+      eq(schema.seizureRecordShares.seizureRecordId, schema.seizureRecords.id),
+    )
+    .innerJoin(
+      schema.patients,
+      eq(schema.seizureRecords.patientId, schema.patients.id),
+    )
+    .where(and(...conditions));
+
+  const rows = await db
+    .select({
+      id: schema.seizureRecordShares.id,
+      patientId: schema.patients.id,
+      patientFirstName: schema.patients.firstName,
+      patientLastName: schema.patients.lastName,
+      recipientEmail: schema.seizureRecordShares.recipientEmail,
+      createdAt: schema.seizureRecordShares.createdAt,
+      expiresAt: schema.seizureRecordShares.expiresAt,
+    })
+    .from(schema.seizureRecordShares)
+    .innerJoin(
+      schema.seizureRecords,
+      eq(schema.seizureRecordShares.seizureRecordId, schema.seizureRecords.id),
+    )
+    .innerJoin(
+      schema.patients,
+      eq(schema.seizureRecords.patientId, schema.patients.id),
+    )
+    .where(and(...conditions))
+    .orderBy(sql`${schema.seizureRecordShares.createdAt} desc`)
+    .limit(limit);
+
+  return {
+    totalUnopened,
+    shares: rows.map((r) => ({
+      id: r.id,
+      patientId: r.patientId,
+      patientName: formatName(r.patientFirstName, r.patientLastName),
+      recipientEmail: r.recipientEmail,
+      createdAt: r.createdAt,
+      expiresAt: r.expiresAt,
+      expired: r.expiresAt ? new Date(r.expiresAt) < new Date() : false,
+    })),
+  };
+}
+
+export async function getVideoCoverage(db: DB, careHomeId: string) {
+  const monthStart = firstDayOfMonth(new Date());
+
+  const [{ total, withVideo }] = await db
+    .select({
+      total: count(),
+      withVideo: sql<number>`cast(count(${schema.seizureRecords.videoId}) as integer)`,
+    })
+    .from(schema.seizureRecords)
+    .innerJoin(
+      schema.patients,
+      eq(schema.seizureRecords.patientId, schema.patients.id),
+    )
+    .where(
+      and(
+        eq(schema.patients.careHomeId, careHomeId),
+        gte(schema.seizureRecords.createdAt, monthStart.toISOString()),
+      ),
+    );
+
+  return {
+    total,
+    withVideo,
+    percent: total > 0 ? Math.round((withVideo / total) * 100) : null,
+  };
+}
+
+export async function getMostActiveRecorder(db: DB, careHomeId: string) {
+  const monthStart = firstDayOfMonth(new Date());
+
+  const [row] = await db
+    .select({
+      userId: schema.userProfiles.id,
+      firstName: schema.userProfiles.firstName,
+      lastName: schema.userProfiles.lastName,
+      eventCount: sql<number>`cast(count(*) as integer)`,
+    })
+    .from(schema.seizureRecords)
+    .innerJoin(
+      schema.patients,
+      eq(schema.seizureRecords.patientId, schema.patients.id),
+    )
+    .innerJoin(
+      schema.userProfiles,
+      eq(schema.seizureRecords.recordedBy, schema.userProfiles.id),
+    )
+    .where(
+      and(
+        eq(schema.patients.careHomeId, careHomeId),
+        gte(schema.seizureRecords.createdAt, monthStart.toISOString()),
+      ),
+    )
+    .groupBy(
+      schema.userProfiles.id,
+      schema.userProfiles.firstName,
+      schema.userProfiles.lastName,
+    )
+    .orderBy(sql`count(*) desc`)
+    .limit(1);
+
+  if (!row) return null;
+
+  return {
+    userId: row.userId,
+    name: formatName(row.firstName, row.lastName),
+    eventCount: row.eventCount,
   };
 }
 
