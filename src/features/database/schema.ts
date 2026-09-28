@@ -162,6 +162,7 @@ export const seizureRecords = pgTable(
     videoId: uuid("video_id"),
     recordedAt: timestamp("recorded_at", { mode: "string" }),
     durationSeconds: integer("duration_seconds"),
+    videoDurationSeconds: integer("video_duration_seconds"),
     seizureType: varchar("seizure_type"),
     notes: text(),
     createdAt: timestamp("created_at", { mode: "string" })

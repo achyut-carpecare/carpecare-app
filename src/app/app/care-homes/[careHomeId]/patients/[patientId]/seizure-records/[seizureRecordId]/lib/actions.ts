@@ -70,6 +70,7 @@ export async function createSeizureRecordShareAction({
       patientName: formatName(patient.firstName, patient.lastName),
       shareUrl,
       expiresAt: formatDateTime(share.expiresAt),
+      recordId: seizureRecordId,
     });
 
     console.log(

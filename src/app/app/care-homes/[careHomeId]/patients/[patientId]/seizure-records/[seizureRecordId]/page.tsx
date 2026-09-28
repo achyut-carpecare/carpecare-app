@@ -153,14 +153,21 @@ export default async function SeizureRecordPage({
               value={formatDateTime(seizureRecord.recordedAt)}
             />
             <Stat
-              label="Duration"
+              label="Event duration"
               value={formatDuration(seizureRecord.durationSeconds)}
             />
+            {seizureRecord.videoDurationSeconds != null && (
+              <Stat
+                label="Video length"
+                value={formatDuration(seizureRecord.videoDurationSeconds)}
+              />
+            )}
             <Stat label="Type" value={seizureRecord.seizureType ?? "—"} />
             <Stat
               label="Recorded by"
               value={formatName(recorder?.firstName, recorder?.lastName)}
             />
+            <Stat label="Reference ID" value={seizureRecord.id} />
           </div>
         </CardContent>
       </Card>

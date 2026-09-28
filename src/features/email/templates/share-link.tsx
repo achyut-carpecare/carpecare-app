@@ -6,6 +6,7 @@ interface ShareLinkEmailProps {
   patientName: string;
   shareUrl: string;
   expiresAt: string;
+  recordId: string;
 }
 
 export function ShareLinkEmail({
@@ -13,6 +14,7 @@ export function ShareLinkEmail({
   patientName,
   shareUrl,
   expiresAt,
+  recordId,
 }: ShareLinkEmailProps) {
   const preview = `${careHomeName} has shared a seizure record with you.`;
 
@@ -24,6 +26,12 @@ export function ShareLinkEmail({
       <Text style={emailStyles.text}>
         {careHomeName} has shared a read-only seizure record for {patientName}.
         Click the button below to review it securely.
+      </Text>
+      <Text style={{ ...emailStyles.text, margin: "0 0 16px 0" }}>
+        Reference ID:{" "}
+        <span style={{ fontFamily: "monospace", fontSize: "14px" }}>
+          {recordId}
+        </span>
       </Text>
       <Section style={emailStyles.buttonContainer}>
         <Button href={shareUrl} style={emailStyles.button}>

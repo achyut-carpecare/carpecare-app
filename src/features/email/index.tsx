@@ -42,15 +42,23 @@ export async function sendShareLinkEmail({
   patientName,
   shareUrl,
   expiresAt,
+  recordId,
 }: {
   to: string;
   careHomeName: string;
   patientName: string;
   shareUrl: string;
   expiresAt: string;
+  recordId: string;
 }) {
   const html = await render(
-    ShareLinkEmail({ careHomeName, patientName, shareUrl, expiresAt }),
+    ShareLinkEmail({
+      careHomeName,
+      patientName,
+      shareUrl,
+      expiresAt,
+      recordId,
+    }),
   );
 
   const data = await sendEmail({

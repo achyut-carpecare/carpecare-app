@@ -21,6 +21,7 @@ import { SEIZURE_TYPES } from "@/features/seizure-records/constants";
 import { createSeizureRecordAction } from "./lib/actions";
 import { uploadVideoFile } from "@/features/storage/actions";
 import { toast } from "@/components/ui/sonner";
+import { formatDuration } from "@/features/dashboard/lib/format";
 
 function toLocalDateTimeInputValue(date: Date): string {
   const pad = (n: number) => n.toString().padStart(2, "0");
@@ -46,6 +47,9 @@ export default function NewSeizureRecordPage({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [trimmedFile, setTrimmedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [videoDurationSeconds, setVideoDurationSeconds] = useState<
+    number | null
+  >(null);
   const [formData, setFormData] = useState({
     recordedAt: toLocalDateTimeInputValue(new Date()),
     durationSeconds: "",
@@ -72,10 +76,15 @@ export default function NewSeizureRecordPage({
     videoStartDate: Date | null,
     trimStartSeconds: number,
   ) {
+    const clipLength = Math.max(1, Math.round(durationSeconds));
     setTrimmedFile(file);
+    setVideoDurationSeconds(clipLength);
     setFormData((prev) => ({
       ...prev,
-      durationSeconds: Math.max(1, Math.round(durationSeconds)).toString(),
+      // Pre-fill the event duration from the clip length as a starting
+      // point only - only if the carer hasn't already entered one, since
+      // the actual seizure is often shorter than the trimmed clip.
+      durationSeconds: prev.durationSeconds || clipLength.toString(),
       recordedAt:
         videoStartDate != null
           ? toLocalDateTimeInputValue(
@@ -113,6 +122,7 @@ export default function NewSeizureRecordPage({
       patientId,
       recordedAt: new Date(formData.recordedAt).toISOString(),
       durationSeconds: Number(formData.durationSeconds),
+      videoDurationSeconds: videoDurationSeconds ?? undefined,
       seizureType: resolvedSeizureType,
       notes: formData.notes,
       videoId,
@@ -163,6 +173,7 @@ export default function NewSeizureRecordPage({
                 variant="outline"
                 onClick={() => {
                   setTrimmedFile(null);
+                  setVideoDurationSeconds(null);
                   setStep(2);
                 }}
                 className="rounded-xl"
@@ -203,7 +214,7 @@ export default function NewSeizureRecordPage({
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="duration">Duration (seconds)</Label>
+                <Label htmlFor="duration">Event duration (seconds)</Label>
                 <Input
                   id="duration"
                   type="number"
@@ -215,8 +226,18 @@ export default function NewSeizureRecordPage({
                   placeholder="e.g. 83"
                   className="rounded-xl"
                 />
+                <p className="text-xs text-muted-foreground">
+                  How long the seizure itself lasted - this can be shorter than
+                  the video clip.
+                </p>
               </div>
             </div>
+
+            {videoDurationSeconds != null && (
+              <div className="text-sm text-muted-foreground bg-muted rounded-xl px-3 py-2">
+                Video clip length: {formatDuration(videoDurationSeconds)}
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="type">Seizure type</Label>
               <Select
@@ -295,11 +316,17 @@ export default function NewSeizureRecordPage({
                 {new Date(formData.recordedAt).toLocaleString("en-GB")}
               </div>
               <div>
-                <span className="font-semibold">Duration:</span>{" "}
+                <span className="font-semibold">Event duration:</span>{" "}
                 {formData.durationSeconds
-                  ? `${formData.durationSeconds}s`
+                  ? formatDuration(Number(formData.durationSeconds))
                   : "—"}
               </div>
+              {videoDurationSeconds != null && (
+                <div>
+                  <span className="font-semibold">Video length:</span>{" "}
+                  {formatDuration(videoDurationSeconds)}
+                </div>
+              )}
               <div>
                 <span className="font-semibold">Type:</span>{" "}
                 {resolvedSeizureType || "—"}
