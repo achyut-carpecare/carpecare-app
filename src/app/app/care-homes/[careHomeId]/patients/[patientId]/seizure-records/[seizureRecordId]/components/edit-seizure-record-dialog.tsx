@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SEIZURE_TYPES } from "@/features/seizure-records/constants";
+import { VideoTrimmer } from "@/features/seizure-records/components/video-trimmer";
 import { updateSeizureRecordAction } from "../lib/actions";
 import { uploadVideoFile } from "@/features/storage/actions";
 import { toast } from "@/components/ui/sonner";
@@ -35,22 +36,6 @@ function toLocalDateTimeInputValue(date: Date): string {
   const hours = pad(date.getHours());
   const minutes = pad(date.getMinutes());
   return `${year}-${month}-${day}T${hours}:${minutes}`;
-}
-
-function readVideoDuration(file: File): Promise<number | null> {
-  return new Promise((resolve) => {
-    const video = document.createElement("video");
-    video.preload = "metadata";
-    video.onloadedmetadata = () => {
-      resolve(Math.round(video.duration) || null);
-      URL.revokeObjectURL(video.src);
-    };
-    video.onerror = () => {
-      resolve(null);
-      URL.revokeObjectURL(video.src);
-    };
-    video.src = URL.createObjectURL(file);
-  });
 }
 
 interface EditSeizureRecordDialogProps {
@@ -83,7 +68,10 @@ export function EditSeizureRecordDialog({
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUploadingVideo, setIsUploadingVideo] = useState(false);
-  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [trimmedFile, setTrimmedFile] = useState<File | null>(null);
+  const [videoDurationSeconds, setVideoDurationSeconds] = useState<
+    number | null
+  >(null);
   const initialSeizureTypeSelectValue = getSeizureTypeSelectValue(
     initial.seizureType,
   );
@@ -111,17 +99,28 @@ export function EditSeizureRecordDialog({
     setFormData((prev) => ({ ...prev, [field]: value }));
   }
 
+  function handleTrimComplete(file: File, durationSeconds: number) {
+    const clipLength = Math.max(1, Math.round(durationSeconds));
+    setTrimmedFile(file);
+    setVideoDurationSeconds(clipLength);
+    // Pre-fill the event duration if it isn't set yet, same as the
+    // create flow - only a starting point, still editable.
+    setFormData((prev) => ({
+      ...prev,
+      durationSeconds: prev.durationSeconds || clipLength.toString(),
+    }));
+  }
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setIsSubmitting(true);
 
     let videoId: string | undefined;
-    let videoDurationSeconds: number | undefined;
 
-    if (videoFile) {
+    if (trimmedFile) {
       setIsUploadingVideo(true);
       const uploadFormData = new FormData();
-      uploadFormData.set("video", videoFile);
+      uploadFormData.set("video", trimmedFile);
       const uploadResult = await uploadVideoFile(uploadFormData);
       setIsUploadingVideo(false);
 
@@ -132,7 +131,6 @@ export function EditSeizureRecordDialog({
       }
 
       videoId = uploadResult.fileId;
-      videoDurationSeconds = (await readVideoDuration(videoFile)) ?? undefined;
     }
 
     const result = await updateSeizureRecordAction({
@@ -141,7 +139,7 @@ export function EditSeizureRecordDialog({
       seizureRecordId,
       recordedAt: new Date(formData.recordedAt).toISOString(),
       durationSeconds: Number(formData.durationSeconds),
-      videoDurationSeconds,
+      videoDurationSeconds: videoDurationSeconds ?? undefined,
       seizureType: resolvedSeizureType,
       notes: formData.notes,
       videoId,
@@ -170,7 +168,8 @@ export function EditSeizureRecordDialog({
         seizureTypeOther: isOther ? (initial.seizureType ?? "") : "",
         notes: initial.notes ?? "",
       });
-      setVideoFile(null);
+      setTrimmedFile(null);
+      setVideoDurationSeconds(null);
     }
   }
 
@@ -182,7 +181,7 @@ export function EditSeizureRecordDialog({
           Edit
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-lg rounded-2xl">
+      <DialogContent className="sm:max-w-xl rounded-2xl max-h-[90vh] overflow-y-auto">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
             <DialogTitle>Edit event</DialogTitle>
@@ -269,24 +268,16 @@ export function EditSeizureRecordDialog({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="video" className="flex items-center gap-1.5">
+              <Label className="flex items-center gap-1.5">
                 <Video className="w-4 h-4" />
                 {initial.hasVideo ? "Replace video" : "Add video"}
               </Label>
-              <Input
-                id="video"
-                type="file"
-                accept="video/*"
-                onChange={(e) => setVideoFile(e.target.files?.[0] ?? null)}
-                className="rounded-xl"
-              />
               <p className="text-xs text-muted-foreground">
-                {videoFile
-                  ? `Selected: ${videoFile.name}`
-                  : initial.hasVideo
-                    ? "This record already has a video. Choose a file to replace it."
-                    : "No video attached yet. Choose a file to add one."}
+                {initial.hasVideo
+                  ? "This record already has a video. Pick and trim a new one to replace it, or leave this alone to keep the existing video."
+                  : "No video attached yet. Pick and trim one to add it."}
               </p>
+              <VideoTrimmer onTrimComplete={handleTrimComplete} />
             </div>
           </div>
 

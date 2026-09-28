@@ -16,7 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { VideoTrimmer } from "./components/video-trimmer";
+import { VideoTrimmer } from "@/features/seizure-records/components/video-trimmer";
 import { SEIZURE_TYPES } from "@/features/seizure-records/constants";
 import { createSeizureRecordAction } from "./lib/actions";
 import { uploadVideoFile } from "@/features/storage/actions";
