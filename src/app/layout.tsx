@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Inter, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/sonner";
+import { RouteProgressBar } from "@/components/route-progress-bar";
 
 const spaceGroteskHeading = Space_Grotesk({
   subsets: ["latin"],
@@ -46,6 +47,7 @@ export default function RootLayout({
       )}
     >
       <body className="min-h-full flex flex-col">
+        <RouteProgressBar />
         {children}
         <Toaster />
       </body>
