@@ -38,7 +38,10 @@ interface Member {
   id: string;
   userId: string;
   careHomeId: string;
-  role: "admin" | "member";
+  // IT Admin isn't pickable from this page's role selector yet (Phase 3),
+  // but an existing member can already hold it at the data layer, so the
+  // display type has to allow it.
+  role: "admin" | "member" | "it_admin";
   firstName: string | null;
   lastName: string | null;
   email: string | undefined;
@@ -48,7 +51,7 @@ interface Invitation {
   id: string;
   careHomeId: string;
   invitedEmail: string;
-  role: "admin" | "member";
+  role: "admin" | "member" | "it_admin";
   status: string;
 }
 

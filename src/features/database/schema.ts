@@ -15,12 +15,21 @@ import {
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
 
-export const careHomeRole = pgEnum("care_home_role", ["admin", "member"]);
+export const careHomeRole = pgEnum("care_home_role", [
+  "admin",
+  "member",
+  "it_admin",
+]);
 export const invitationStatus = pgEnum("invitation_status", [
   "pending",
   "accepted",
   "expired",
   "revoked",
+]);
+export const careHomeKind = pgEnum("care_home_kind", [
+  "family",
+  "domiciliary",
+  "residential",
 ]);
 
 export const gooseDbVersion = pgTable("goose_db_version", {
@@ -242,12 +251,100 @@ export const files = pgTable(
   ],
 );
 
-export const careHome = pgTable("care_home", {
+export const organisations = pgTable("organisations", {
   id: uuid().defaultRandom().primaryKey().notNull(),
   name: varchar(),
   createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
   updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
 });
+
+export const organisationMembers = pgTable(
+  "organisation_members",
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    userId: uuid("user_id").notNull(),
+    organisationId: uuid("organisation_id").notNull(),
+    createdAt: timestamp("created_at", { mode: "string" })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { mode: "string" })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.organisationId],
+      foreignColumns: [organisations.id],
+      name: "organisation_members_organisation_id_fkey",
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [userProfiles.id],
+      name: "organisation_members_user_id_fkey",
+    }).onDelete("cascade"),
+    unique("organisation_members_user_id_organisation_id_key").on(
+      table.userId,
+      table.organisationId,
+    ),
+  ],
+);
+
+export const patientAccessGrants = pgTable(
+  "patient_access_grants",
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    userId: uuid("user_id").notNull(),
+    patientId: uuid("patient_id").notNull(),
+    careHomeId: uuid("care_home_id").notNull(),
+    createdAt: timestamp("created_at", { mode: "string" })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.patientId],
+      foreignColumns: [patients.id],
+      name: "patient_access_grants_patient_id_fkey",
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [table.careHomeId],
+      foreignColumns: [careHome.id],
+      name: "patient_access_grants_care_home_id_fkey",
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [table.userId],
+      foreignColumns: [userProfiles.id],
+      name: "patient_access_grants_user_id_fkey",
+    }).onDelete("cascade"),
+    unique("patient_access_grants_user_id_patient_id_key").on(
+      table.userId,
+      table.patientId,
+    ),
+  ],
+);
+
+export const careHome = pgTable(
+  "care_home",
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    name: varchar(),
+    organisationId: uuid("organisation_id"),
+    kind: careHomeKind().default("residential").notNull(),
+    createdAt: timestamp("created_at", { mode: "string" })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { mode: "string" })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.organisationId],
+      foreignColumns: [organisations.id],
+      name: "care_home_organisation_id_fkey",
+    }).onDelete("set null"),
+  ],
+);
 
 export const platformInvitations = pgTable(
   "platform_invitations",

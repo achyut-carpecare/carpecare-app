@@ -4,6 +4,8 @@ export * from "./dashboard";
 export * from "./files";
 export * from "./invitations";
 export * from "./mfa-recovery-codes";
+export * from "./organisations";
+export * from "./patient-access-grants";
 export * from "./patient-detail";
 export * from "./patients";
 export * from "./platform-invitations";
