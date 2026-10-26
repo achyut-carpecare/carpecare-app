@@ -58,13 +58,17 @@ interface Invitation {
 interface MembersListProps {
   members: Member[];
   invitations: Invitation[];
-  canManage: boolean;
+  // Invite/resend/revoke/remove - available to Admin and IT Admin.
+  canManageAccounts: boolean;
+  // Change someone's role - Admin only, IT Admin can't grant/revoke admin.
+  canManageRoles: boolean;
 }
 
 export function MembersList({
   members,
   invitations,
-  canManage,
+  canManageAccounts,
+  canManageRoles,
 }: MembersListProps) {
   const router = useRouter();
   const [pendingInvitationIds, setPendingInvitationIds] = useState<Set<string>>(
@@ -135,7 +139,7 @@ export function MembersList({
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
-                {canManage && (
+                {canManageAccounts && (
                   <TableHead className="text-right">Actions</TableHead>
                 )}
               </TableRow>
@@ -150,7 +154,7 @@ export function MembersList({
                     {member.email ?? "—"}
                   </TableCell>
                   <TableCell>
-                    {canManage ? (
+                    {canManageRoles ? (
                       <Select
                         value={member.role}
                         onValueChange={(value) =>
@@ -174,7 +178,7 @@ export function MembersList({
                       </Badge>
                     )}
                   </TableCell>
-                  {canManage && (
+                  {canManageAccounts && (
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -214,7 +218,7 @@ export function MembersList({
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
                 <TableHead>Status</TableHead>
-                {canManage && (
+                {canManageAccounts && (
                   <TableHead className="text-right">Actions</TableHead>
                 )}
               </TableRow>
@@ -233,7 +237,7 @@ export function MembersList({
                       {invitation.status}
                     </Badge>
                   </TableCell>
-                  {canManage && (
+                  {canManageAccounts && (
                     <TableCell className="text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>

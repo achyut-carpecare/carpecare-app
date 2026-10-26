@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Building2, Users } from "lucide-react";
 import {
@@ -10,32 +9,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { createClient } from "@/features/auth/server";
+import { requireSystemAdmin } from "@/features/auth/guards";
 import { db } from "@/features/database";
 import { PageHeader } from "@/features/dashboard/components/page-header";
 import { AccessDenied } from "@/features/dashboard/components/access-denied";
-import {
-  getCareHomeCounts,
-  getCareHomes,
-  getUserWithMemberships,
-} from "@/features/database/queries";
+import { getCareHomeCounts, getCareHomes } from "@/features/database/queries";
 import { AddCareHomeDialog } from "./components/add-care-home-dialog";
 import { EditCareHomeDialog } from "./components/edit-care-home-dialog";
 import { DeleteCareHomeDialog } from "./components/delete-care-home-dialog";
 
 export default async function AdminDashboardPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/auth/login");
-  }
-
-  const result = await getUserWithMemberships(db, user.id);
-
-  if (!result || !result.profile.isSystemAdmin) {
+  const auth = await requireSystemAdmin();
+  if (auth.error) {
     return <AccessDenied />;
   }
 

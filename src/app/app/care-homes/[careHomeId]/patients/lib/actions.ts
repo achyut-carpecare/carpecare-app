@@ -5,7 +5,7 @@ import { db } from "@/features/database";
 import { createPatient, updatePatientById } from "@/features/database/queries";
 import {
   requireCareHomeAdmin,
-  requireCareHomeMember,
+  requirePatientAccess,
 } from "@/features/auth/guards";
 
 export async function updatePatientAction({
@@ -24,7 +24,7 @@ export async function updatePatientAction({
   nhsNumber?: string;
 }) {
   try {
-    const auth = await requireCareHomeMember(careHomeId);
+    const auth = await requirePatientAccess(patientId);
     if (auth.error) {
       return { error: auth.error };
     }

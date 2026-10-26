@@ -2,7 +2,10 @@ import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/features/auth/server";
 import { db } from "@/features/database";
 import { getAuthUserEmailsByIds } from "@/features/auth/admin";
-import { requireCareHomeAdmin } from "@/features/auth/guards";
+import {
+  requireCareHomeAccountManager,
+  requireCareHomeAdmin,
+} from "@/features/auth/guards";
 import { PageHeader } from "@/features/dashboard/components/page-header";
 import { AccessDenied } from "@/features/dashboard/components/access-denied";
 import {
@@ -31,13 +34,15 @@ export default async function MembersPage({ params }: MembersPageProps) {
     redirect("/auth/login");
   }
 
-  const auth = await requireCareHomeAdmin(careHomeId);
+  const auth = await requireCareHomeAccountManager(careHomeId);
   if (auth.error || !auth.userId || !auth.profile) {
     return <AccessDenied />;
   }
 
   const isSystemAdmin = auth.profile.isSystemAdmin;
-  const canManage = true;
+  const canManageAccounts = true;
+  const adminCheck = await requireCareHomeAdmin(careHomeId);
+  const canManageRoles = !adminCheck.error;
   const directMembership = await getCareHomeMemberByUserIdAndCareHomeId(
     db,
     auth.userId,
@@ -81,7 +86,9 @@ export default async function MembersPage({ params }: MembersPageProps) {
             {isSystemAdmin && !isMember && (
               <JoinCareHomeButton careHomeId={careHomeId} />
             )}
-            {canManage && <InviteMemberDialog careHomeId={careHomeId} />}
+            {canManageAccounts && (
+              <InviteMemberDialog careHomeId={careHomeId} />
+            )}
           </div>
         }
       />
@@ -89,7 +96,8 @@ export default async function MembersPage({ params }: MembersPageProps) {
       <MembersList
         members={members}
         invitations={invitations}
-        canManage={canManage}
+        canManageAccounts={canManageAccounts}
+        canManageRoles={canManageRoles}
       />
     </div>
   );

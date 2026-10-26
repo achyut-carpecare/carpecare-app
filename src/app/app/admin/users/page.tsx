@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import { Users } from "lucide-react";
 import {
   Table,
@@ -10,13 +9,10 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { createClient } from "@/features/auth/server";
 import { getAuthUserEmailsByIds } from "@/features/auth/admin";
+import { requireSystemAdmin } from "@/features/auth/guards";
 import { db } from "@/features/database";
-import {
-  getUserProfiles,
-  getUserWithMemberships,
-} from "@/features/database/queries";
+import { getUserProfiles } from "@/features/database/queries";
 import { PageHeader } from "@/features/dashboard/components/page-header";
 import { AccessDenied } from "@/features/dashboard/components/access-denied";
 import { InviteUserDialog } from "./components/invite-user-dialog";
@@ -25,18 +21,8 @@ import { AdminStatusSwitch } from "./components/admin-status-switch";
 import { ResetMfaButton } from "./components/reset-mfa-button";
 
 export default async function AdminUsersPage() {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/auth/login");
-  }
-
-  const result = await getUserWithMemberships(db, user.id);
-
-  if (!result || !result.profile.isSystemAdmin) {
+  const auth = await requireSystemAdmin();
+  if (auth.error || !auth.userId) {
     return <AccessDenied />;
   }
 
@@ -81,7 +67,7 @@ export default async function AdminUsersPage() {
                 </TableRow>
               )}
               {profiles.map((profile) => {
-                const isCurrentUser = profile.id === user.id;
+                const isCurrentUser = profile.id === auth.userId;
                 const email = emailById.get(profile.id);
 
                 return (
