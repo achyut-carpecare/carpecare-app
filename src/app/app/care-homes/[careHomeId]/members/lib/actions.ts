@@ -10,12 +10,16 @@ import {
   requireCareHomeAdmin,
 } from "@/features/auth/guards";
 import {
+  createPatientAccessGrant,
+  deletePatientAccessGrantById,
   getCareHomeById,
   getCareHomeInvitationById,
   getCareHomeMemberById,
   getCareHomeMembers,
+  getPatientAccessGrantsForUser,
   getPendingCareHomeInvitationByEmail,
   getUserProfileById,
+  updateCareHomeMemberAccessMode,
 } from "@/features/database/queries";
 import {
   generateToken,
@@ -40,7 +44,7 @@ export async function inviteMemberAction({
 }: {
   careHomeId: string;
   email: string;
-  role: "admin" | "member";
+  role: "admin" | "member" | "it_admin";
 }) {
   try {
     const auth = await requireCareHomeAccountManager(careHomeId);
@@ -228,7 +232,7 @@ export async function updateMemberRoleAction({
   role,
 }: {
   memberId: string;
-  role: "admin" | "member";
+  role: "admin" | "member" | "it_admin";
 }) {
   try {
     const member = await getCareHomeMemberById(db, memberId);
@@ -264,6 +268,90 @@ export async function updateMemberRoleAction({
   } catch (error) {
     console.error("Failed to update member role:", error);
     return { error: "Failed to update member role" };
+  }
+}
+
+export async function getMemberPatientAccessAction(memberId: string) {
+  try {
+    const member = await getCareHomeMemberById(db, memberId);
+    if (!member) {
+      return { error: "Member not found" };
+    }
+
+    const auth = await requireCareHomeAccountManager(member.careHomeId);
+    if (auth.error) {
+      return { error: auth.error };
+    }
+
+    const grants = await getPatientAccessGrantsForUser(
+      db,
+      member.userId,
+      member.careHomeId,
+    );
+
+    return { success: true, patientIds: grants.map((g) => g.patientId) };
+  } catch (error) {
+    console.error("Failed to load member access:", error);
+    return { error: "Failed to load member access" };
+  }
+}
+
+export async function updateMemberAccessAction({
+  memberId,
+  accessMode,
+  patientIds,
+}: {
+  memberId: string;
+  accessMode: "home_wide" | "person_scoped";
+  patientIds: string[];
+}) {
+  try {
+    const member = await getCareHomeMemberById(db, memberId);
+    if (!member) {
+      return { error: "Member not found" };
+    }
+
+    const auth = await requireCareHomeAccountManager(member.careHomeId);
+    if (auth.error) {
+      return { error: auth.error };
+    }
+
+    await updateCareHomeMemberAccessMode(db, memberId, accessMode);
+
+    if (accessMode === "person_scoped") {
+      const existingGrants = await getPatientAccessGrantsForUser(
+        db,
+        member.userId,
+        member.careHomeId,
+      );
+      const existingPatientIds = new Set(
+        existingGrants.map((g) => g.patientId),
+      );
+      const desiredPatientIds = new Set(patientIds);
+
+      const toAdd = patientIds.filter((id) => !existingPatientIds.has(id));
+      const toRemove = existingGrants.filter(
+        (g) => !desiredPatientIds.has(g.patientId),
+      );
+
+      await Promise.all([
+        ...toAdd.map((patientId) =>
+          createPatientAccessGrant(db, {
+            userId: member.userId,
+            patientId,
+            careHomeId: member.careHomeId,
+          }),
+        ),
+        ...toRemove.map((grant) => deletePatientAccessGrantById(db, grant.id)),
+      ]);
+    }
+
+    revalidatePath(`/app/care-homes/${member.careHomeId}/members`);
+
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to update member access:", error);
+    return { error: "Failed to update member access" };
   }
 }
 

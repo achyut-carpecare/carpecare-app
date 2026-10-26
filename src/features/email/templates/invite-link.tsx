@@ -17,7 +17,12 @@ export function InvitationEmail({
   expiresAt,
 }: InvitationEmailProps) {
   const preview = `${inviterName} has invited you to join ${careHomeName} on Carpe Care.`;
-  const roleLabel = role === "admin" ? "care home admin" : "team member";
+  const roleLabel =
+    role === "admin"
+      ? "care home admin"
+      : role === "it_admin"
+        ? "IT administrator"
+        : "team member";
 
   return (
     <BaseEmail

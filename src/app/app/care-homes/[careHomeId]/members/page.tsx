@@ -13,6 +13,7 @@ import {
   getCareHomeInvitations,
   getCareHomeMemberByUserIdAndCareHomeId,
   getCareHomeMembersWithProfiles,
+  getPatients,
 } from "@/features/database/queries";
 import { InviteMemberDialog } from "./components/invite-member-dialog";
 import { JoinCareHomeButton } from "./components/join-care-home-button";
@@ -71,9 +72,17 @@ export default async function MembersPage({ params }: MembersPageProps) {
     userId: item.member.userId,
     careHomeId: item.member.careHomeId,
     role: item.member.role,
+    accessMode: item.member.accessMode,
     firstName: item.profile.firstName,
     lastName: item.profile.lastName,
     email: emailById.get(item.member.userId),
+  }));
+
+  const patients = await getPatients(db, { careHomeId });
+  const patientOptions = patients.map((p) => ({
+    id: p.id,
+    firstName: p.firstName,
+    lastName: p.lastName,
   }));
 
   return (
@@ -98,6 +107,7 @@ export default async function MembersPage({ params }: MembersPageProps) {
         invitations={invitations}
         canManageAccounts={canManageAccounts}
         canManageRoles={canManageRoles}
+        patients={patientOptions}
       />
     </div>
   );

@@ -85,6 +85,19 @@ export async function updateCareHomeMemberRole(
   return updatedMember;
 }
 
+export async function updateCareHomeMemberAccessMode(
+  db: DB,
+  id: string,
+  accessMode: DBEnums["careHomeMemberAccessMode"],
+): Promise<DBTables["careHomeMembers"] | undefined> {
+  const [updatedMember] = await db
+    .update(schema.careHomeMembers)
+    .set({ accessMode, updatedAt: new Date().toISOString() })
+    .where(eq(schema.careHomeMembers.id, id))
+    .returning();
+  return updatedMember;
+}
+
 export async function getCareHomeIdForUser(
   db: DB,
   userId: string,

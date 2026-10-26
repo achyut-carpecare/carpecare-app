@@ -33,15 +33,14 @@ import {
   updateMemberRoleAction,
 } from "../lib/actions";
 import { toast } from "@/components/ui/sonner";
+import { MemberAccessDialog } from "./member-access-dialog";
 
 interface Member {
   id: string;
   userId: string;
   careHomeId: string;
-  // IT Admin isn't pickable from this page's role selector yet (Phase 3),
-  // but an existing member can already hold it at the data layer, so the
-  // display type has to allow it.
   role: "admin" | "member" | "it_admin";
+  accessMode: "home_wide" | "person_scoped";
   firstName: string | null;
   lastName: string | null;
   email: string | undefined;
@@ -55,6 +54,12 @@ interface Invitation {
   status: string;
 }
 
+interface PatientOption {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+}
+
 interface MembersListProps {
   members: Member[];
   invitations: Invitation[];
@@ -62,6 +67,7 @@ interface MembersListProps {
   canManageAccounts: boolean;
   // Change someone's role - Admin only, IT Admin can't grant/revoke admin.
   canManageRoles: boolean;
+  patients: PatientOption[];
 }
 
 export function MembersList({
@@ -69,13 +75,17 @@ export function MembersList({
   invitations,
   canManageAccounts,
   canManageRoles,
+  patients,
 }: MembersListProps) {
   const router = useRouter();
   const [pendingInvitationIds, setPendingInvitationIds] = useState<Set<string>>(
     new Set(),
   );
 
-  async function handleRoleChange(memberId: string, role: "admin" | "member") {
+  async function handleRoleChange(
+    memberId: string,
+    role: "admin" | "member" | "it_admin",
+  ) {
     const result = await updateMemberRoleAction({ memberId, role });
     if (result.error) {
       toast.error(result.error);
@@ -139,6 +149,7 @@ export function MembersList({
                 <TableHead>Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Role</TableHead>
+                <TableHead>Access</TableHead>
                 {canManageAccounts && (
                   <TableHead className="text-right">Actions</TableHead>
                 )}
@@ -160,7 +171,7 @@ export function MembersList({
                         onValueChange={(value) =>
                           handleRoleChange(
                             member.id,
-                            value as "admin" | "member",
+                            value as "admin" | "member" | "it_admin",
                           )
                         }
                       >
@@ -169,12 +180,36 @@ export function MembersList({
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="member">Member</SelectItem>
+                          <SelectItem value="it_admin">IT Admin</SelectItem>
                           <SelectItem value="admin">Admin</SelectItem>
                         </SelectContent>
                       </Select>
                     ) : (
                       <Badge variant="secondary" className="capitalize">
-                        {member.role}
+                        {member.role.replace("_", " ")}
+                      </Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {member.role === "it_admin" ? (
+                      <span className="text-sm text-muted-foreground">
+                        Accounts only
+                      </span>
+                    ) : canManageAccounts ? (
+                      <MemberAccessDialog
+                        memberId={member.id}
+                        memberName={formatName(
+                          member.firstName,
+                          member.lastName,
+                        )}
+                        accessMode={member.accessMode}
+                        patients={patients}
+                      />
+                    ) : (
+                      <Badge variant="outline" className="capitalize">
+                        {member.accessMode === "home_wide"
+                          ? "Everyone"
+                          : "Specific residents"}
                       </Badge>
                     )}
                   </TableCell>
@@ -230,7 +265,7 @@ export function MembersList({
                     {invitation.invitedEmail}
                   </TableCell>
                   <TableCell className="capitalize">
-                    {invitation.role}
+                    {invitation.role.replace("_", " ")}
                   </TableCell>
                   <TableCell>
                     <Badge variant="outline" className="capitalize">

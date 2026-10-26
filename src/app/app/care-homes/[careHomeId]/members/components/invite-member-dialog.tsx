@@ -34,7 +34,7 @@ export function InviteMemberDialog({ careHomeId }: InviteMemberDialogProps) {
   const [open, setOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState<"admin" | "member">("member");
+  const [role, setRole] = useState<"admin" | "member" | "it_admin">("member");
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
@@ -98,16 +98,23 @@ export function InviteMemberDialog({ careHomeId }: InviteMemberDialogProps) {
               <Label htmlFor="role">Role</Label>
               <Select
                 value={role}
-                onValueChange={(value) => setRole(value as "admin" | "member")}
+                onValueChange={(value) =>
+                  setRole(value as "admin" | "member" | "it_admin")
+                }
               >
                 <SelectTrigger id="role" className="rounded-xl">
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="member">Member</SelectItem>
+                  <SelectItem value="it_admin">IT Admin</SelectItem>
                   <SelectItem value="admin">Admin</SelectItem>
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">
+                IT Admin can manage logins and resident access, but can&apos;t
+                view or edit clinical records.
+              </p>
             </div>
           </div>
 
