@@ -21,11 +21,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { signOut } from "@/features/auth/actions";
-import { CareHomeSwitcher } from "./care-home-switcher";
+import {
+  WorkspaceSwitcher,
+  type WorkspaceGroup,
+  type WorkspaceType,
+} from "./workspace-switcher";
 
 interface CareHome {
   id: string;
   name: string | null;
+  kind: "family" | "domiciliary" | "residential";
 }
 
 interface Organisation {
@@ -46,11 +51,6 @@ interface NavItem {
   name: string;
   href: string;
   icon: React.ComponentType<{ className?: string }>;
-}
-
-interface NavSection {
-  title: string;
-  items: NavItem[];
 }
 
 function resolveHref(item: NavItem, currentCareHomeId: string | undefined) {
@@ -80,52 +80,79 @@ export function AppShell({
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const careHomeMatch = pathname.match(/\/app\/care-homes\/([^\/]+)/);
-  const currentCareHomeId = careHomeMatch?.[1] ?? careHomes[0]?.id;
+  const careHomeMatch = pathname.match(/\/app\/care-homes\/([^/]+)/);
+  const orgMatch = pathname.match(/\/app\/organisations\/([^/]+)/);
+  const currentOrganisationId = orgMatch?.[1];
+  const currentCareHomeId =
+    careHomeMatch?.[1] ??
+    (currentOrganisationId ? undefined : careHomes[0]?.id);
 
-  const careHomeSection: NavSection = {
-    title: "Establishment",
-    items: [
-      { name: "Dashboard", href: "/app", icon: LayoutDashboard },
-      { name: "Residents", href: "/patients", icon: Users },
-      { name: "All events", href: "/events", icon: Activity },
-      { name: "Members", href: "/members", icon: UserCog },
-    ],
-  };
+  const establishments = careHomes.filter((h) => h.kind !== "family");
+  const families = careHomes.filter((h) => h.kind === "family");
 
-  const adminSection: NavSection = {
-    title: "Administration",
-    items: [
-      { name: "Establishments", href: "/app/admin", icon: Building2 },
-      {
-        name: "Organisations",
-        href: "/app/admin/organisations",
-        icon: Briefcase,
-      },
-      { name: "Users", href: "/app/admin/users", icon: Shield },
-    ],
-  };
+  const currentCareHome = careHomes.find((h) => h.id === currentCareHomeId);
 
-  const organisationsSection: NavSection = {
-    title: "Organisations",
-    items: organisations.map((org) => ({
-      name: org.name ?? "Unnamed organisation",
-      href: `/app/organisations/${org.id}`,
+  const workspaceGroups: WorkspaceGroup[] = [
+    ...(establishments.length > 0
+      ? [
+          {
+            type: "establishment" as const,
+            label: "Establishments",
+            items: establishments,
+          },
+        ]
+      : []),
+    ...(families.length > 0
+      ? [{ type: "family" as const, label: "Family", items: families }]
+      : []),
+    ...(organisations.length > 0
+      ? [
+          {
+            type: "organisation" as const,
+            label: "Organisations",
+            items: organisations,
+          },
+        ]
+      : []),
+  ];
+
+  const activeWorkspaceType: WorkspaceType = currentOrganisationId
+    ? "organisation"
+    : currentCareHome
+      ? currentCareHome.kind === "family"
+        ? "family"
+        : "establishment"
+      : establishments.length > 0
+        ? "establishment"
+        : families.length > 0
+          ? "family"
+          : "organisation";
+
+  const activeWorkspaceItemId = currentOrganisationId ?? currentCareHomeId;
+
+  const workspaceNavItems: NavItem[] = [
+    { name: "Dashboard", href: "/app", icon: LayoutDashboard },
+    { name: "Residents", href: "/patients", icon: Users },
+    { name: "All events", href: "/events", icon: Activity },
+    { name: "Members", href: "/members", icon: UserCog },
+  ];
+
+  const adminItems: NavItem[] = [
+    { name: "Establishments", href: "/app/admin", icon: Building2 },
+    {
+      name: "Organisations",
+      href: "/app/admin/organisations",
       icon: Briefcase,
-    })),
-  };
+    },
+    { name: "Users", href: "/app/admin/users", icon: Shield },
+  ];
 
-  const sections: NavSection[] = [careHomeSection];
-  if (organisations.length > 0) {
-    sections.push(organisationsSection);
-  }
-  if (userRole) {
-    sections.push(adminSection);
-  }
+  const showWorkspaceNav = activeWorkspaceType !== "organisation";
+
+  const allNavItems = [...workspaceNavItems, ...(userRole ? adminItems : [])];
 
   const activeNavItem = (() => {
-    const allItems = sections.flatMap((section) => section.items);
-    const candidates = allItems
+    const candidates = allNavItems
       .map((item) => ({ item, href: resolveHref(item, currentCareHomeId) }))
       .filter(({ href }) => {
         if (href === "/app") return pathname === "/app";
@@ -147,7 +174,6 @@ export function AppShell({
     ? adminCareHomeIds.includes(currentCareHomeId)
     : false;
 
-  const currentCareHome = careHomes.find((h) => h.id === currentCareHomeId);
   const currentCareHomeName = currentCareHome?.name ?? "Establishment";
   const viewingNonMemberCareHome =
     !!currentCareHomeId && !isMemberOfCurrentCareHome;
@@ -181,36 +207,25 @@ export function AppShell({
         </div>
 
         <nav className="flex-1 p-3 space-y-6 overflow-y-auto">
-          {sections.map((section) => (
-            <div key={section.title} className="space-y-1">
-              <div className="px-3 py-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                  {section.title}
+          <div className="space-y-2 px-3">
+            <WorkspaceSwitcher
+              groups={workspaceGroups}
+              activeType={activeWorkspaceType}
+              activeItemId={activeWorkspaceItemId}
+            />
+            {viewingNonMemberCareHome && (
+              <div className="text-xs text-muted-foreground px-1">
+                Viewing:{" "}
+                <span className="font-medium text-foreground">
+                  {currentCareHomeName}
                 </span>
               </div>
-              {section.title === "Establishment" && (
-                <div className="px-3 pb-2">
-                  {careHomes.length > 0 ? (
-                    <CareHomeSwitcher
-                      careHomes={careHomes}
-                      currentCareHomeId={currentCareHomeId ?? careHomes[0].id}
-                    />
-                  ) : (
-                    <div className="text-xs text-muted-foreground px-1">
-                      Not a member of any establishment
-                    </div>
-                  )}
-                  {viewingNonMemberCareHome && (
-                    <div className="mt-2 text-xs text-muted-foreground px-1">
-                      Viewing:{" "}
-                      <span className="font-medium text-foreground">
-                        {currentCareHomeName}
-                      </span>
-                    </div>
-                  )}
-                </div>
-              )}
-              {section.items.map((item) => {
+            )}
+          </div>
+
+          {showWorkspaceNav && (
+            <div className="space-y-1">
+              {workspaceNavItems.map((item) => {
                 const href = resolveHref(item, currentCareHomeId);
                 const active = isActive(item);
                 const Icon = item.icon;
@@ -248,7 +263,37 @@ export function AppShell({
                 );
               })}
             </div>
-          ))}
+          )}
+
+          {userRole && (
+            <div className="space-y-1">
+              <div className="px-3 py-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Administration
+                </span>
+              </div>
+              {adminItems.map((item) => {
+                const active = isActive(item);
+                const Icon = item.icon;
+
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    onClick={() => setMobileOpen(false)}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors ${
+                      active
+                        ? "bg-primary/10 text-primary font-semibold"
+                        : "text-muted-foreground hover:bg-muted"
+                    }`}
+                  >
+                    <Icon className="w-4 h-4" />
+                    {item.name}
+                  </Link>
+                );
+              })}
+            </div>
+          )}
         </nav>
 
         <Separator />
