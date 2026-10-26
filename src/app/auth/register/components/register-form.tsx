@@ -13,12 +13,16 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { registerWithInvitationAction } from "../actions";
+import {
+  registerWithInvitationAction,
+  registerWithOrganisationInvitationAction,
+} from "../actions";
 
 interface RegisterFormProps {
   invitationId: string;
   linkToken: string;
   email: string;
+  kind: "care_home" | "organisation";
 }
 
 const MIN_PASSWORD_LENGTH = 8;
@@ -27,6 +31,7 @@ export function RegisterForm({
   invitationId,
   linkToken,
   email,
+  kind,
 }: RegisterFormProps) {
   const router = useRouter();
   const [firstName, setFirstName] = useState("");
@@ -65,7 +70,12 @@ export function RegisterForm({
 
     setIsSubmitting(true);
 
-    const result = await registerWithInvitationAction({
+    const action =
+      kind === "care_home"
+        ? registerWithInvitationAction
+        : registerWithOrganisationInvitationAction;
+
+    const result = await action({
       invitationId,
       linkToken,
       firstName: firstName.trim(),
@@ -94,8 +104,9 @@ export function RegisterForm({
       <CardHeader className="text-center">
         <CardTitle>Create your account</CardTitle>
         <CardDescription>
-          You have been invited to join an establishment on Carpe Care. Complete
-          the form below to get started.
+          You have been invited to join{" "}
+          {kind === "care_home" ? "an establishment" : "an organisation"} on
+          Carpe Care. Complete the form below to get started.
         </CardDescription>
       </CardHeader>
       <CardContent>

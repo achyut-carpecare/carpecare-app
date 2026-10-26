@@ -57,7 +57,7 @@ export function CreateOrganisationDialog() {
             <DialogTitle>Add organisation</DialogTitle>
             <DialogDescription>
               For a multi-site provider - create the organisation first, then
-              add establishments and senior managers from its console.
+              add establishments and Organisation Admins from its console.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">

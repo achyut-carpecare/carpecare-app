@@ -11,6 +11,7 @@ import {
   getCareHomeCounts,
   getCareHomesForOrganisation,
   getOrganisationById,
+  getOrganisationInvitations,
   getOrganisationMembersWithProfiles,
   getStandaloneCareHomes,
 } from "@/features/database/queries";
@@ -22,6 +23,7 @@ import { AttachCareHomeDialog } from "./components/attach-care-home-dialog";
 import { DetachCareHomeButton } from "./components/detach-care-home-button";
 import { RenameOrganisationDialog } from "./components/rename-organisation-dialog";
 import { AddOrgMemberDialog } from "./components/add-org-member-dialog";
+import { InviteOrgAdminDialog } from "./components/invite-org-admin-dialog";
 import { OrgMembersList } from "./components/org-members-list";
 import { DeleteOrganisationDialog } from "./components/delete-organisation-dialog";
 
@@ -44,15 +46,21 @@ export default async function OrganisationPage({
     notFound();
   }
 
-  const [homes, membersWithProfiles, candidateProfiles, standaloneCareHomes] =
-    await Promise.all([
-      getCareHomesForOrganisation(db, organisationId),
-      getOrganisationMembersWithProfiles(db, organisationId),
-      getCareHomeAdminsForOrganisation(db, organisationId),
-      auth.profile.isSystemAdmin
-        ? getStandaloneCareHomes(db)
-        : Promise.resolve([]),
-    ]);
+  const [
+    homes,
+    membersWithProfiles,
+    candidateProfiles,
+    standaloneCareHomes,
+    pendingInvitations,
+  ] = await Promise.all([
+    getCareHomesForOrganisation(db, organisationId),
+    getOrganisationMembersWithProfiles(db, organisationId),
+    getCareHomeAdminsForOrganisation(db, organisationId),
+    auth.profile.isSystemAdmin
+      ? getStandaloneCareHomes(db)
+      : Promise.resolve([]),
+    getOrganisationInvitations(db, organisationId, { status: "pending" }),
+  ]);
 
   const homesWithCounts = await Promise.all(
     homes.map(async (home) => {
@@ -203,14 +211,17 @@ export default async function OrganisationPage({
 
       <Card className="rounded-2xl">
         <CardHeader className="pb-3 flex flex-row items-center justify-between">
-          <CardTitle className="text-lg">Senior managers</CardTitle>
-          <AddOrgMemberDialog
-            organisationId={organisationId}
-            candidates={candidates}
-          />
+          <CardTitle className="text-lg">Organisation Admins</CardTitle>
+          <div className="flex items-center gap-2">
+            <InviteOrgAdminDialog organisationId={organisationId} />
+            <AddOrgMemberDialog
+              organisationId={organisationId}
+              candidates={candidates}
+            />
+          </div>
         </CardHeader>
         <CardContent>
-          <OrgMembersList members={members} />
+          <OrgMembersList members={members} invitations={pendingInvitations} />
         </CardContent>
       </Card>
     </div>

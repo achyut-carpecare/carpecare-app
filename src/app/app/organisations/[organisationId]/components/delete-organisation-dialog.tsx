@@ -58,7 +58,7 @@ export function DeleteOrganisationDialog({
         <DialogHeader>
           <DialogTitle>Delete {organisationName}</DialogTitle>
           <DialogDescription>
-            This removes the organisation and every senior manager seat.
+            This removes the organisation and every Organisation Admin seat.
             Establishments underneath it are <strong>not</strong> deleted - they
             become standalone and keep their residents and records, but lose the
             shared organisation-level admin access. This cannot be undone.

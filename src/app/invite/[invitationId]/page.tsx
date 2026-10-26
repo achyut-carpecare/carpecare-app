@@ -6,6 +6,8 @@ import { db } from "@/features/database";
 import {
   getCareHomeInvitationById,
   acceptInvitationById,
+  getOrganisationInvitationById,
+  acceptOrganisationInvitationById,
 } from "@/features/database/queries";
 import { compareTokenHash } from "@/features/email";
 
@@ -14,8 +16,13 @@ interface InvitePageProps {
   searchParams: Promise<{ token?: string }>;
 }
 
-function buildRegisterUrl(invitationId: string, linkToken: string) {
-  return `/auth/register?invite=${invitationId}&token=${linkToken}`;
+function buildRegisterUrl(
+  kind: "care_home" | "organisation",
+  invitationId: string,
+  linkToken: string,
+) {
+  const param = kind === "care_home" ? "invite" : "orgInvite";
+  return `/auth/register?${param}=${invitationId}&token=${linkToken}`;
 }
 
 export default async function InvitePage({
@@ -29,11 +36,19 @@ export default async function InvitePage({
     notFound();
   }
 
-  const invitation = await getCareHomeInvitationById(db, invitationId);
+  const careHomeInvitation = await getCareHomeInvitationById(db, invitationId);
+  const organisationInvitation = careHomeInvitation
+    ? null
+    : await getOrganisationInvitationById(db, invitationId);
+  const invitation = careHomeInvitation ?? organisationInvitation;
 
   if (!invitation) {
     notFound();
   }
+
+  const kind: "care_home" | "organisation" = careHomeInvitation
+    ? "care_home"
+    : "organisation";
 
   if (invitation.status !== "pending") {
     return (
@@ -54,8 +69,8 @@ export default async function InvitePage({
         <div className="max-w-md text-center space-y-4">
           <h1 className="text-2xl font-bold">Invitation expired</h1>
           <p className="text-muted-foreground">
-            This invitation has expired. Please ask the establishment admin to
-            send a new invitation.
+            This invitation has expired. Please ask whoever invited you to send
+            a new invitation.
           </p>
         </div>
       </div>
@@ -74,7 +89,7 @@ export default async function InvitePage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const registerUrl = buildRegisterUrl(invitationId, linkToken);
+  const registerUrl = buildRegisterUrl(kind, invitationId, linkToken);
 
   if (!user) {
     redirect(registerUrl);
@@ -118,7 +133,29 @@ export default async function InvitePage({
     );
   }
 
-  const result = await acceptInvitationById(
+  if (kind === "care_home") {
+    const result = await acceptInvitationById(
+      db,
+      invitationId,
+      linkToken,
+      user.id,
+    );
+
+    if ("error" in result) {
+      return (
+        <div className="min-h-screen flex items-center justify-center p-6">
+          <div className="max-w-md text-center space-y-4">
+            <h1 className="text-2xl font-bold">Could not accept invitation</h1>
+            <p className="text-muted-foreground">{result.error}</p>
+          </div>
+        </div>
+      );
+    }
+
+    redirect(`/app/care-homes/${result.careHomeId}`);
+  }
+
+  const result = await acceptOrganisationInvitationById(
     db,
     invitationId,
     linkToken,
@@ -136,5 +173,5 @@ export default async function InvitePage({
     );
   }
 
-  redirect(`/app/care-homes/${result.careHomeId}`);
+  redirect(`/app/organisations/${result.organisationId}`);
 }

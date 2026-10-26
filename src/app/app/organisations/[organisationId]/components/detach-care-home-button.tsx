@@ -69,7 +69,7 @@ export function DetachCareHomeButton({
           </DialogTitle>
           <DialogDescription>
             {careHomeName} becomes a standalone establishment again - it keeps
-            all its residents and records. Senior managers here lose admin
+            all its residents and records. Organisation Admins here lose admin
             access to it unless they&apos;re also a direct member.
           </DialogDescription>
         </DialogHeader>

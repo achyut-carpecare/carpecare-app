@@ -10,10 +10,20 @@ import { createAdminClient } from "@/features/auth/admin";
 import {
   getCareHomeById,
   getCareHomeInvitationById,
+  getOrganisationById,
+  getOrganisationInvitationById,
 } from "@/features/database/queries";
 import { compareTokenHash } from "@/features/email";
 
 interface RegisterWithInvitationInput {
+  invitationId: string;
+  linkToken: string;
+  firstName: string;
+  lastName: string;
+  password: string;
+}
+
+interface RegisterWithOrganisationInvitationInput {
   invitationId: string;
   linkToken: string;
   firstName: string;
@@ -51,6 +61,33 @@ function validateRegistrationInput(input: {
 
 async function validateInvitation(invitationId: string, linkToken: string) {
   const invitation = await getCareHomeInvitationById(db, invitationId);
+  if (!invitation) {
+    return { error: "Invitation not found", invitation: null };
+  }
+
+  if (invitation.status !== "pending") {
+    return { error: "This invitation is no longer valid", invitation: null };
+  }
+
+  if (invitation.expiresAt && new Date(invitation.expiresAt) < new Date()) {
+    return { error: "This invitation has expired", invitation: null };
+  }
+
+  if (
+    !invitation.linkTokenHash ||
+    !compareTokenHash(linkToken, invitation.linkTokenHash)
+  ) {
+    return { error: "Invalid invitation link", invitation: null };
+  }
+
+  return { error: null, invitation };
+}
+
+async function validateOrganisationInvitation(
+  invitationId: string,
+  linkToken: string,
+) {
+  const invitation = await getOrganisationInvitationById(db, invitationId);
   if (!invitation) {
     return { error: "Invitation not found", invitation: null };
   }
@@ -206,4 +243,142 @@ export async function registerWithInvitationAction(
   revalidatePath("/app", "layout");
 
   return redirect(`/app/care-homes/${careHomeId}`);
+}
+
+export async function registerWithOrganisationInvitationAction(
+  input: RegisterWithOrganisationInvitationInput,
+) {
+  let organisationId: string;
+
+  try {
+    const { invitationId, linkToken, firstName, lastName, password } = input;
+
+    const inputError = validateRegistrationInput({
+      firstName,
+      lastName,
+      password,
+    });
+    if (inputError) {
+      return inputError;
+    }
+
+    const { error: validationError, invitation } =
+      await validateOrganisationInvitation(invitationId, linkToken);
+    if (validationError || !invitation) {
+      return { error: validationError ?? "Invalid invitation" };
+    }
+
+    const organisation = await getOrganisationById(
+      db,
+      invitation.organisationId,
+    );
+    if (!organisation) {
+      return { error: "Organisation not found" };
+    }
+
+    const adminClient = await createAdminClient();
+    const { data: userData, error: createError } =
+      await adminClient.auth.admin.createUser({
+        email: invitation.invitedEmail,
+        password,
+        email_confirm: true,
+        user_metadata: {
+          first_name: firstName,
+          last_name: lastName,
+        },
+      });
+
+    if (createError) {
+      if (
+        createError.status === 422 ||
+        createError.code === "user_already_exists" ||
+        createError.message.toLowerCase().includes("already")
+      ) {
+        return {
+          existingAccount: true,
+          error:
+            "An account already exists for this email address. Please sign in to accept the invitation.",
+        };
+      }
+      console.error("Failed to create invited user:", createError);
+      return { error: "Failed to create account" };
+    }
+
+    if (!userData.user) {
+      return { error: "Failed to create account" };
+    }
+
+    const userId = userData.user.id;
+    organisationId = invitation.organisationId;
+
+    await db.transaction(async (tx) => {
+      await tx
+        .insert(schema.userProfiles)
+        .values({
+          id: userId,
+          firstName,
+          lastName,
+          isSystemAdmin: false,
+        })
+        .onConflictDoUpdate({
+          target: schema.userProfiles.id,
+          set: {
+            firstName,
+            lastName,
+            updatedAt: new Date().toISOString(),
+          },
+        });
+
+      const existingMembership = await tx
+        .select()
+        .from(schema.organisationMembers)
+        .where(
+          and(
+            eq(schema.organisationMembers.userId, userId),
+            eq(
+              schema.organisationMembers.organisationId,
+              invitation.organisationId,
+            ),
+          ),
+        );
+
+      if (existingMembership.length === 0) {
+        await tx.insert(schema.organisationMembers).values({
+          userId,
+          organisationId: invitation.organisationId,
+        });
+      }
+
+      await tx
+        .update(schema.organisationInvitations)
+        .set({
+          status: "accepted",
+          acceptedAt: new Date().toISOString(),
+          acceptedBy: userId,
+          updatedAt: new Date().toISOString(),
+        })
+        .where(eq(schema.organisationInvitations.id, invitationId));
+    });
+
+    const supabase = await createClient();
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email: invitation.invitedEmail,
+      password,
+    });
+
+    if (signInError) {
+      console.error("Failed to sign in newly created user:", signInError);
+      return {
+        error: "Account created but sign in failed. Please sign in manually.",
+      };
+    }
+  } catch (error) {
+    console.error("registerWithOrganisationInvitationAction failed:", error);
+    return { error: "Something went wrong. Please try again." };
+  }
+
+  revalidatePath(`/app/organisations/${organisationId}`);
+  revalidatePath("/app", "layout");
+
+  return redirect(`/app/organisations/${organisationId}`);
 }

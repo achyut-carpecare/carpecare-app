@@ -300,6 +300,51 @@ export const organisationMembers = pgTable(
   ],
 );
 
+export const organisationInvitations = pgTable(
+  "organisation_invitations",
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    organisationId: uuid("organisation_id").notNull(),
+    invitedEmail: varchar("invited_email").notNull(),
+    invitedBy: uuid("invited_by"),
+    status: invitationStatus().default("pending").notNull(),
+    linkTokenHash: text("link_token_hash"),
+    acceptedAt: timestamp("accepted_at", { mode: "string" }),
+    acceptedBy: uuid("accepted_by"),
+    expiresAt: timestamp("expires_at", { mode: "string" }),
+    createdAt: timestamp("created_at", { mode: "string" })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { mode: "string" })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    uniqueIndex("idx_organisation_invitations_pending_email")
+      .using(
+        "btree",
+        table.organisationId.asc().nullsLast().op("text_ops"),
+        table.invitedEmail.asc().nullsLast().op("text_ops"),
+      )
+      .where(sql`(status = 'pending'::invitation_status)`),
+    foreignKey({
+      columns: [table.acceptedBy],
+      foreignColumns: [userProfiles.id],
+      name: "organisation_invitations_accepted_by_fkey",
+    }).onDelete("set null"),
+    foreignKey({
+      columns: [table.organisationId],
+      foreignColumns: [organisations.id],
+      name: "organisation_invitations_organisation_id_fkey",
+    }).onDelete("cascade"),
+    foreignKey({
+      columns: [table.invitedBy],
+      foreignColumns: [userProfiles.id],
+      name: "organisation_invitations_invited_by_fkey",
+    }).onDelete("set null"),
+  ],
+);
+
 export const patientAccessGrants = pgTable(
   "patient_access_grants",
   {

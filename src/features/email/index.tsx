@@ -4,6 +4,7 @@ import { ShareLinkEmail } from "./templates/share-link";
 import { ShareNotificationEmail } from "./templates/share-notification";
 import { ShareOtpEmail } from "./templates/share-otp";
 import { InvitationEmail } from "./templates/invite-link";
+import { OrganisationInviteEmail } from "./templates/organisation-invite";
 import { PlatformInviteEmail } from "./templates/platform-invite";
 import { HelpRequestEmail } from "./templates/help-request";
 
@@ -164,6 +165,38 @@ export async function sendInvitationEmail({
   });
 
   console.log("Invitation email sent:", data?.id, "to:", to);
+  return data;
+}
+
+export async function sendOrganisationInviteEmail({
+  to,
+  organisationName,
+  inviterName,
+  inviteUrl,
+  expiresAt,
+}: {
+  to: string;
+  organisationName: string;
+  inviterName: string;
+  inviteUrl: string;
+  expiresAt: string;
+}) {
+  const html = await render(
+    OrganisationInviteEmail({
+      organisationName,
+      inviterName,
+      inviteUrl,
+      expiresAt,
+    }),
+  );
+
+  const data = await sendEmail({
+    to,
+    subject: `You're invited to join ${organisationName} on Carpe Care`,
+    html,
+  });
+
+  console.log("Organisation invite email sent:", data?.id, "to:", to);
   return data;
 }
 

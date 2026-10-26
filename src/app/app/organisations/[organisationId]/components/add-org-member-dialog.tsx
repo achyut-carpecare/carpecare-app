@@ -69,7 +69,7 @@ export function AddOrgMemberDialog({
       return;
     }
 
-    toast.success("Senior manager added");
+    toast.success("Organisation Admin added");
     setUserId("");
     setOpen(false);
     router.refresh();
@@ -80,13 +80,13 @@ export function AddOrgMemberDialog({
       <DialogTrigger asChild>
         <Button variant="secondary" className="rounded-xl">
           <UserPlus className="w-4 h-4 mr-2" />
-          Add senior manager
+          Add Organisation Admin
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md rounded-2xl">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Add senior manager</DialogTitle>
+            <DialogTitle>Add Organisation Admin</DialogTitle>
             <DialogDescription>
               Pick someone who already manages an establishment in this
               organisation. They&apos;ll get admin rights across every home
@@ -97,8 +97,8 @@ export function AddOrgMemberDialog({
             {candidates.length === 0 ? (
               <p className="text-sm text-muted-foreground">
                 Nobody to promote yet - everyone with Admin rights at a home
-                here is already a senior manager. Make someone an Admin at one
-                of this organisation&apos;s homes first.
+                here is already an Organisation Admin. Make someone an Admin at
+                one of this organisation&apos;s homes first.
               </p>
             ) : (
               <Select value={userId} onValueChange={setUserId}>
