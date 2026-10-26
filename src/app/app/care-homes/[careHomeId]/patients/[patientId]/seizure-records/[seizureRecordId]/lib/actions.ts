@@ -5,13 +5,20 @@ import { db } from "@/features/database";
 import {
   createSeizureRecordShare,
   deleteSeizureRecordById,
+  deleteSeizureRecordShareById,
   getSeizureRecordWithDetails,
-  getUserWithMemberships,
   updateSeizureRecordById,
 } from "@/features/database/queries";
 import { generateToken, hashToken, sendShareLinkEmail } from "@/features/email";
 import { formatDateTime, formatName } from "@/features/dashboard/lib/format";
-import { createClient } from "@/features/auth/server";
+import {
+  requireCareHomeAdmin,
+  requireCareHomeMember,
+} from "@/features/auth/guards";
+import {
+  assertOwnsVideoFile,
+  deleteVideoFile,
+} from "@/features/storage/actions";
 
 export async function createSeizureRecordShareAction({
   seizureRecordId,
@@ -24,8 +31,8 @@ export async function createSeizureRecordShareAction({
 }) {
   try {
     const trimmedEmail = recipientEmail.trim();
-    if (!trimmedEmail) {
-      return { error: "Recipient email is required" };
+    if (!trimmedEmail || !trimmedEmail.includes("@")) {
+      return { error: "A valid recipient email is required" };
     }
 
     if (expiresInDays < 1 || expiresInDays > 30) {
@@ -40,6 +47,11 @@ export async function createSeizureRecordShareAction({
     const { patient, careHome } = record;
     if (!patient || !careHome) {
       return { error: "Seizure record is missing patient or care home data" };
+    }
+
+    const auth = await requireCareHomeMember(careHome.id);
+    if (auth.error) {
+      return { error: auth.error };
     }
 
     const expiresAt = new Date();
@@ -64,21 +76,20 @@ export async function createSeizureRecordShareAction({
 
     const shareUrl = `${appUrl}/share/${share.id}?token=${rawLinkToken}`;
 
-    const emailResult = await sendShareLinkEmail({
-      to: trimmedEmail,
-      careHomeName: careHome.name ?? "Carpe Care",
-      patientName: formatName(patient.firstName, patient.lastName),
-      shareUrl,
-      expiresAt: formatDateTime(share.expiresAt),
-      recordId: seizureRecordId,
-    });
-
-    console.log(
-      "createSeizureRecordShareAction: email sent for",
-      trimmedEmail,
-      "id:",
-      emailResult?.id,
-    );
+    try {
+      await sendShareLinkEmail({
+        to: trimmedEmail,
+        careHomeName: careHome.name ?? "Carpe Care",
+        patientName: formatName(patient.firstName, patient.lastName),
+        shareUrl,
+        expiresAt: formatDateTime(share.expiresAt),
+        recordId: seizureRecordId,
+      });
+    } catch (emailError) {
+      console.error("Failed to send share link email:", emailError);
+      await deleteSeizureRecordShareById(db, share.id);
+      return { error: "Failed to send the share email. Please try again." };
+    }
 
     revalidatePath(`/app/care-homes/${careHome.id}/patients/${patient.id}`);
 
@@ -99,25 +110,9 @@ export async function deleteSeizureRecordAction({
   seizureRecordId: string;
 }) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return { error: "You must be signed in" };
-    }
-
-    const result = await getUserWithMemberships(db, user.id);
-    if (!result) {
-      return { error: "You must be signed in" };
-    }
-
-    const { profile, memberships } = result;
-    const membership = memberships.find((m) => m.careHome.id === careHomeId);
-
-    if (!profile.isSystemAdmin && membership?.role !== "admin") {
-      return { error: "You do not have permission to delete this record" };
+    const auth = await requireCareHomeAdmin(careHomeId);
+    if (auth.error) {
+      return { error: auth.error };
     }
 
     const deleted = await deleteSeizureRecordById(db, seizureRecordId, {
@@ -127,6 +122,10 @@ export async function deleteSeizureRecordAction({
 
     if (!deleted) {
       return { error: "Seizure record not found" };
+    }
+
+    if (deleted.videoId) {
+      await deleteVideoFile(deleted.videoId);
     }
 
     revalidatePath(`/app/care-homes/${careHomeId}/patients/${patientId}`);
@@ -161,25 +160,11 @@ export async function updateSeizureRecordAction({
   videoId?: string;
 }) {
   try {
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return { error: "You must be signed in" };
-    }
-
-    const result = await getUserWithMemberships(db, user.id);
-    if (!result) {
-      return { error: "You must be signed in" };
-    }
-
-    const { profile, memberships } = result;
-    const membership = memberships.find((m) => m.careHome.id === careHomeId);
-
-    if (!profile.isSystemAdmin && membership?.role !== "admin") {
-      return { error: "You do not have permission to edit this record" };
+    const auth = await requireCareHomeAdmin(careHomeId);
+    if (auth.error || !auth.userId) {
+      return {
+        error: auth.error ?? "You do not have permission to edit this record",
+      };
     }
 
     const record = await getSeizureRecordWithDetails(db, seizureRecordId, {
@@ -198,6 +183,12 @@ export async function updateSeizureRecordAction({
       return { error: "Seizure type is required" };
     }
 
+    if (videoId && !(await assertOwnsVideoFile(videoId, auth.userId))) {
+      return { error: "Invalid video" };
+    }
+
+    const previousVideoId = record.seizureRecord.videoId;
+
     await updateSeizureRecordById(
       db,
       seizureRecordId,
@@ -211,6 +202,10 @@ export async function updateSeizureRecordAction({
       },
       { careHomeId, patientId },
     );
+
+    if (videoId && previousVideoId && previousVideoId !== videoId) {
+      await deleteVideoFile(previousVideoId);
+    }
 
     revalidatePath(
       `/app/care-homes/${careHomeId}/patients/${patientId}/seizure-records/${seizureRecordId}`,

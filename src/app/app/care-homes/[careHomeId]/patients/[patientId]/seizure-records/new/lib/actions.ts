@@ -2,8 +2,12 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/features/database";
-import { createSeizureRecord } from "@/features/database/queries";
-import { createClient } from "@/features/auth/server";
+import {
+  createSeizureRecord,
+  getPatientById,
+} from "@/features/database/queries";
+import { requireCareHomeMember } from "@/features/auth/guards";
+import { assertOwnsVideoFile } from "@/features/storage/actions";
 
 export async function createSeizureRecordAction({
   patientId,
@@ -31,13 +35,21 @@ export async function createSeizureRecordAction({
       return { error: "Seizure type is required" };
     }
 
-    const supabase = await createClient();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const patient = await getPatientById(db, patientId);
+    if (!patient || !patient.careHomeId) {
+      return { error: "Resident not found" };
+    }
 
-    if (!user) {
-      return { error: "You must be signed in" };
+    const auth = await requireCareHomeMember(patient.careHomeId);
+    if (auth.error || !auth.userId) {
+      return {
+        error:
+          auth.error ?? "You do not have permission to perform this action",
+      };
+    }
+
+    if (videoId && !(await assertOwnsVideoFile(videoId, auth.userId))) {
+      return { error: "Invalid video" };
     }
 
     const record = await createSeizureRecord(db, {
@@ -48,7 +60,7 @@ export async function createSeizureRecordAction({
       seizureType: seizureType?.trim() || null,
       notes: notes?.trim() || null,
       videoId: videoId ?? null,
-      recordedBy: user.id,
+      recordedBy: auth.userId,
     });
 
     revalidatePath(`/app/care-homes`);

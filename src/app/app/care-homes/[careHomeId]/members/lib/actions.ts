@@ -149,14 +149,28 @@ export async function inviteMemberAction({
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
     const inviteUrl = `${appUrl}/invite/${invitation.id}?token=${linkToken}`;
 
-    await sendInvitationEmail({
-      to: normalizedEmail,
-      careHomeName: careHome.name ?? "Carpe Care",
-      inviterName: formatName(auth.profile!.firstName, auth.profile!.lastName),
-      role,
-      inviteUrl,
-      expiresAt: expiresAt.toLocaleDateString(),
-    });
+    try {
+      await sendInvitationEmail({
+        to: normalizedEmail,
+        careHomeName: careHome.name ?? "Carpe Care",
+        inviterName: formatName(
+          auth.profile!.firstName,
+          auth.profile!.lastName,
+        ),
+        role,
+        inviteUrl,
+        expiresAt: expiresAt.toLocaleDateString(),
+      });
+    } catch (emailError) {
+      // The email never went out, so don't leave a "pending" row behind -
+      // it would permanently block retrying (unique-pending-email index)
+      // with no invite ever delivered.
+      console.error("Failed to send invitation email:", emailError);
+      await db
+        .delete(schema.careHomeInvitations)
+        .where(eq(schema.careHomeInvitations.id, invitation.id));
+      return { error: "Failed to send invitation email. Please try again." };
+    }
 
     revalidatePath(`/app/care-homes/${careHomeId}/members`);
 

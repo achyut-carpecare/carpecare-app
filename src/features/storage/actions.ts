@@ -1,7 +1,12 @@
 "use server";
 
 import { db } from "@/features/database";
-import { createFile } from "@/features/database/queries";
+import {
+  createFile,
+  deleteFileById,
+  getFileById,
+} from "@/features/database/queries";
+import { createClient } from "@/features/auth/server";
 import { createServiceClient } from "./server";
 import { generateVideoPath, getVideoExtension, isVideoFile } from "./lib/utils";
 
@@ -17,6 +22,15 @@ export async function uploadVideoFile(
   formData: FormData,
 ): Promise<UploadVideoResult> {
   try {
+    const authClient = await createClient();
+    const {
+      data: { user },
+    } = await authClient.auth.getUser();
+
+    if (!user) {
+      return { error: "You must be signed in" };
+    }
+
     const file = formData.get("video") as File | null;
 
     if (!file || !isVideoFile(file)) {
@@ -50,12 +64,47 @@ export async function uploadVideoFile(
       s3Key: data.path,
       mimeType: file.type || "video/mp4",
       sizeBytes: file.size,
+      uploadedBy: user.id,
     });
 
     return { fileId: dbFile.id };
   } catch (error) {
     console.error("Upload video action failed:", error);
     return { error: "Unexpected error uploading video" };
+  }
+}
+
+/**
+ * Verifies the caller actually uploaded the given file (rather than passing
+ * an arbitrary id belonging to someone else's video) before it's allowed to
+ * be attached to a seizure record.
+ */
+export async function assertOwnsVideoFile(fileId: string, userId: string) {
+  const file = await getFileById(db, fileId);
+  if (!file || file.uploadedBy !== userId) {
+    return false;
+  }
+  return true;
+}
+
+export async function deleteVideoFile(fileId: string): Promise<void> {
+  try {
+    const file = await getFileById(db, fileId);
+    if (!file) return;
+
+    if (file.s3Key) {
+      const supabase = await createServiceClient();
+      const { error } = await supabase.storage
+        .from(BUCKET_NAME)
+        .remove([file.s3Key]);
+      if (error) {
+        console.error("Failed to remove video from storage:", error);
+      }
+    }
+
+    await deleteFileById(db, fileId);
+  } catch (error) {
+    console.error("Failed to delete video file:", error);
   }
 }
 

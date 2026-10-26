@@ -3,6 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/features/database";
 import { createPatient, updatePatientById } from "@/features/database/queries";
+import {
+  requireCareHomeAdmin,
+  requireCareHomeMember,
+} from "@/features/auth/guards";
 
 export async function updatePatientAction({
   careHomeId,
@@ -20,6 +24,11 @@ export async function updatePatientAction({
   nhsNumber?: string;
 }) {
   try {
+    const auth = await requireCareHomeMember(careHomeId);
+    if (auth.error) {
+      return { error: auth.error };
+    }
+
     const trimmedFirstName = firstName.trim();
     const trimmedLastName = lastName.trim();
 
@@ -67,6 +76,11 @@ export async function createPatientAction({
   nhsNumber?: string;
 }) {
   try {
+    const auth = await requireCareHomeAdmin(careHomeId);
+    if (auth.error) {
+      return { error: auth.error };
+    }
+
     const trimmedFirstName = firstName.trim();
     const trimmedLastName = lastName.trim();
 

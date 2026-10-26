@@ -81,6 +81,18 @@ export async function updatePasswordAction(formData: FormData) {
     };
   }
 
+  // The UI walks MFA-enrolled users through a step-up challenge before
+  // showing this form, but that's only enforced client-side - repeat the
+  // check here so the password can't be changed from a session that hasn't
+  // actually completed it.
+  const { data: aal } =
+    await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+  if (aal && aal.nextLevel === "aal2" && aal.currentLevel !== "aal2") {
+    return {
+      error: "MFA verification is required before changing your password.",
+    };
+  }
+
   const { error } = await supabase.auth.updateUser({ password });
 
   if (error) {

@@ -216,16 +216,31 @@ export const patients = pgTable(
   ],
 );
 
-export const files = pgTable("files", {
-  id: uuid().defaultRandom().primaryKey().notNull(),
-  s3Key: varchar("s3_key"),
-  mimeType: varchar("mime_type"),
-  // You can use { mode: "bigint" } if numbers are exceeding js number limitations
-  sizeBytes: bigint("size_bytes", { mode: "number" }),
-  uploadedAt: timestamp("uploaded_at", { mode: "string" }),
-  createdAt: timestamp("created_at", { mode: "string" }).defaultNow().notNull(),
-  updatedAt: timestamp("updated_at", { mode: "string" }).defaultNow().notNull(),
-});
+export const files = pgTable(
+  "files",
+  {
+    id: uuid().defaultRandom().primaryKey().notNull(),
+    s3Key: varchar("s3_key"),
+    mimeType: varchar("mime_type"),
+    // You can use { mode: "bigint" } if numbers are exceeding js number limitations
+    sizeBytes: bigint("size_bytes", { mode: "number" }),
+    uploadedBy: uuid("uploaded_by"),
+    uploadedAt: timestamp("uploaded_at", { mode: "string" }),
+    createdAt: timestamp("created_at", { mode: "string" })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { mode: "string" })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => [
+    foreignKey({
+      columns: [table.uploadedBy],
+      foreignColumns: [userProfiles.id],
+      name: "files_uploaded_by_fkey",
+    }).onDelete("set null"),
+  ],
+);
 
 export const careHome = pgTable("care_home", {
   id: uuid().defaultRandom().primaryKey().notNull(),

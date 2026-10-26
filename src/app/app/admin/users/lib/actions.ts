@@ -4,14 +4,14 @@ import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { db } from "@/features/database";
 import { schema } from "@/features/database";
-import { createClient } from "@/features/auth/server";
 import { createAdminClient } from "@/features/auth/admin";
+import { requireSystemAdmin } from "@/features/auth/guards";
 import {
   getCareHomeMemberByUserIdAndCareHomeId,
   getUserProfileById,
-  getUserWithMemberships,
   updateUserSystemAdminById,
   createPlatformInvitation,
+  deletePlatformInvitationById,
   getPendingPlatformInvitationByEmail,
   replaceMfaRecoveryCodes,
 } from "@/features/database/queries";
@@ -24,48 +24,6 @@ function normalizeEmail(email: string) {
 
 function formatName(first?: string | null, last?: string | null) {
   return [first, last].filter(Boolean).join(" ") || "Someone";
-}
-
-type AdminAuthResult =
-  | { error: string; userId: null; profile: null }
-  | {
-      error: null;
-      userId: string;
-      profile: {
-        isSystemAdmin: boolean;
-        firstName: string | null;
-        lastName: string | null;
-      };
-    };
-
-async function requireSystemAdmin(): Promise<AdminAuthResult> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "You must be signed in", userId: null, profile: null };
-  }
-
-  const result = await getUserWithMemberships(db, user.id);
-  if (!result || !result.profile.isSystemAdmin) {
-    return {
-      error: "You must be a system admin",
-      userId: null,
-      profile: null,
-    };
-  }
-
-  return {
-    error: null,
-    userId: user.id,
-    profile: {
-      isSystemAdmin: result.profile.isSystemAdmin,
-      firstName: result.profile.firstName,
-      lastName: result.profile.lastName,
-    },
-  };
 }
 
 function randomPassword(): string {
@@ -127,14 +85,20 @@ export async function inviteUserAction({ email }: { email: string }) {
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
     const registerUrl = `${appUrl}/auth/register-admin?invite=${invitation.id}&token=${linkToken}`;
 
-    await sendPlatformInviteEmail({
-      to: normalizedEmail,
-      inviterName: formatName(
-        inviterProfile.firstName,
-        inviterProfile.lastName,
-      ),
-      registerUrl,
-    });
+    try {
+      await sendPlatformInviteEmail({
+        to: normalizedEmail,
+        inviterName: formatName(
+          inviterProfile.firstName,
+          inviterProfile.lastName,
+        ),
+        registerUrl,
+      });
+    } catch (emailError) {
+      console.error("Failed to send platform invite email:", emailError);
+      await deletePlatformInvitationById(db, invitation.id);
+      return { error: "Failed to send invitation email. Please try again." };
+    }
 
     revalidatePath("/app/admin/users");
 

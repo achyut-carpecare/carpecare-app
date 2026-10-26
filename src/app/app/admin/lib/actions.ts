@@ -7,9 +7,15 @@ import {
   deleteCareHomeById,
   updateCareHomeById,
 } from "@/features/database/queries";
+import { requireSystemAdmin } from "@/features/auth/guards";
 
 export async function createCareHomeAction(data: { name: string }) {
   try {
+    const auth = await requireSystemAdmin();
+    if (auth.error) {
+      return { error: auth.error };
+    }
+
     const trimmedName = data.name.trim();
     if (!trimmedName) {
       return { error: "Care home name is required" };
@@ -31,6 +37,11 @@ export async function createCareHomeAction(data: { name: string }) {
 
 export async function updateCareHomeAction(id: string, data: { name: string }) {
   try {
+    const auth = await requireSystemAdmin();
+    if (auth.error) {
+      return { error: auth.error };
+    }
+
     const trimmedName = data.name.trim();
     if (!trimmedName) {
       return { error: "Care home name is required" };
@@ -50,6 +61,11 @@ export async function updateCareHomeAction(id: string, data: { name: string }) {
 
 export async function deleteCareHomeAction(id: string) {
   try {
+    const auth = await requireSystemAdmin();
+    if (auth.error) {
+      return { error: auth.error };
+    }
+
     const careHome = await deleteCareHomeById(db, id);
 
     revalidatePath("/app/admin");

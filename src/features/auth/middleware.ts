@@ -91,10 +91,19 @@ export async function updateSession(request: NextRequest) {
   // themselves.
   if (user && !isPublicPath) {
     const mfaRequired = await isMfaEnabledForUser(user.sub);
-    const { data: aal } =
+    const { data: aal, error: aalError } =
       await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
 
-    if (mfaRequired && aal) {
+    if (mfaRequired) {
+      if (!aal || aalError) {
+        // Fail closed: if we can't confirm the assurance level (Supabase
+        // error, unexpected empty response), don't let the request through
+        // at an unverified level - force re-authentication instead.
+        const url = request.nextUrl.clone();
+        url.pathname = "/auth/login";
+        return NextResponse.redirect(url);
+      }
+
       if (aal.nextLevel === "aal1") {
         // No verified MFA factor enrolled yet - force enrollment.
         const url = request.nextUrl.clone();

@@ -148,14 +148,6 @@ export async function verifyShareOtpAction({
     }
 
     const isValid = compareTokenHash(trimmedOtp, share.otpHash);
-    console.log("verifyShareOtpAction:", {
-      shareId,
-      otpLength: trimmedOtp.length,
-      hasOtpHash: !!share.otpHash,
-      attempts: share.otpAttempts,
-      otpAgeMs: otpSentAt ? Date.now() - otpSentAt.getTime() : null,
-      isValid,
-    });
 
     const attempts = (share.otpAttempts ?? 0) + 1;
 
