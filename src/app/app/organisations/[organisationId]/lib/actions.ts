@@ -10,6 +10,7 @@ import {
   deleteOrganisationById,
   deleteOrganisationInvitationById,
   deleteOrganisationMemberById,
+  getCareHomeAdminsForOrganisation,
   getCareHomeById,
   getOrganisationById,
   getOrganisationInvitationById,
@@ -80,6 +81,20 @@ export async function addOrganisationMemberAction({
     const auth = await requireOrganisationAdmin(organisationId);
     if (auth.error) {
       return { error: auth.error };
+    }
+
+    // Re-derive the legitimate candidate pool server-side rather than
+    // trusting the client-submitted userId - the dropdown only displays
+    // this restriction, it doesn't enforce it.
+    const candidates = await getCareHomeAdminsForOrganisation(
+      db,
+      organisationId,
+    );
+    if (!candidates.some((candidate) => candidate.id === userId)) {
+      return {
+        error:
+          "This person must already be an Admin at one of this organisation's establishments",
+      };
     }
 
     await createOrganisationMember(db, { organisationId, userId });

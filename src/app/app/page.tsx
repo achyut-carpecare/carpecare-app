@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Building2, Users, ArrowRight } from "lucide-react";
+import { Briefcase, Building2, Users, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,7 +12,10 @@ import {
 import { db } from "@/features/database";
 import { createClient } from "@/features/auth/server";
 import { getEffectiveMemberships } from "@/features/auth/guards";
-import { getCareHomeCounts } from "@/features/database/queries";
+import {
+  getCareHomeCounts,
+  getOrganisationsForUser,
+} from "@/features/database/queries";
 
 export default async function AppPage() {
   const supabase = await createClient();
@@ -30,13 +33,53 @@ export default async function AppPage() {
     redirect("/auth/login");
   }
 
-  const { profile, memberships } = result;
+  const { profile, memberships, userId } = result;
 
   if (profile.isSystemAdmin) {
     redirect("/app/admin");
   }
 
   if (memberships.length === 0) {
+    const organisations = await getOrganisationsForUser(db, userId);
+
+    if (organisations.length === 1) {
+      redirect(`/app/organisations/${organisations[0].id}`);
+    }
+
+    if (organisations.length > 1) {
+      return (
+        <div className="max-w-4xl mx-auto space-y-6">
+          <div className="space-y-2">
+            <h1 className="text-2xl font-bold">Your organisations</h1>
+            <p className="text-muted-foreground">
+              Choose an organisation to continue.
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {organisations.map((org) => (
+              <Card key={org.id} className="rounded-2xl">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Briefcase className="w-5 h-5 text-primary" />
+                    {org.name ?? "Unnamed organisation"}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <Button asChild className="w-full rounded-xl">
+                    <Link href={`/app/organisations/${org.id}`}>
+                      Open organisation
+                      <ArrowRight className="w-4 h-4 ml-2" />
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
     return (
       <div className="max-w-xl mx-auto py-12 text-center space-y-4">
         <h1 className="text-2xl font-bold">No establishment yet</h1>
