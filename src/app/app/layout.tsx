@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/features/auth/server";
 import { getEffectiveMemberships } from "@/features/auth/guards";
+import { db } from "@/features/database";
+import { getOrganisationsForUser } from "@/features/database/queries";
 import { AppShell } from "@/features/dashboard/components/app-shell";
 
 export default async function AppLayout({
@@ -29,12 +31,15 @@ export default async function AppLayout({
     .filter((m) => m.role === "admin")
     .map((m) => m.careHome.id);
 
+  const organisations = await getOrganisationsForUser(db, result.userId);
+
   return (
     <AppShell
       userEmail={user.email}
       userRole={profile.isSystemAdmin}
       careHomes={careHomes}
       adminCareHomeIds={adminCareHomeIds}
+      organisations={organisations}
     >
       {children}
     </AppShell>

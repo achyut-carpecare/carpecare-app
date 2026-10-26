@@ -98,6 +98,17 @@ export async function getOrganisationMembersWithProfiles(
     .orderBy(schema.userProfiles.lastName, schema.userProfiles.firstName);
 }
 
+export async function getOrganisationMemberById(
+  db: DB,
+  id: string,
+): Promise<DBTables["organisationMembers"] | undefined> {
+  const [member] = await db
+    .select()
+    .from(schema.organisationMembers)
+    .where(eq(schema.organisationMembers.id, id));
+  return member;
+}
+
 export async function getOrganisationMemberByUserIdAndOrganisationId(
   db: DB,
   userId: string,
@@ -150,6 +161,41 @@ export async function deleteOrganisationMemberById(
     .where(eq(schema.organisationMembers.id, id))
     .returning();
   return deleted;
+}
+
+/**
+ * Candidate pool for promoting someone to Org Admin: anyone who's already
+ * an Admin at a care home within this organisation, excluding people who
+ * already hold an org-level grant.
+ */
+export async function getCareHomeAdminsForOrganisation(
+  db: DB,
+  organisationId: string,
+): Promise<DBTables["userProfiles"][]> {
+  const existingMembers = await getOrganisationMembers(db, organisationId);
+  const existingUserIds = new Set(existingMembers.map((m) => m.userId));
+
+  const rows = await db
+    .selectDistinct({ profile: schema.userProfiles })
+    .from(schema.careHomeMembers)
+    .innerJoin(
+      schema.careHome,
+      eq(schema.careHomeMembers.careHomeId, schema.careHome.id),
+    )
+    .innerJoin(
+      schema.userProfiles,
+      eq(schema.careHomeMembers.userId, schema.userProfiles.id),
+    )
+    .where(
+      and(
+        eq(schema.careHome.organisationId, organisationId),
+        eq(schema.careHomeMembers.role, "admin"),
+      ),
+    );
+
+  return rows
+    .map((r) => r.profile)
+    .filter((profile) => !existingUserIds.has(profile.id));
 }
 
 export async function getCareHomesForOrganisation(

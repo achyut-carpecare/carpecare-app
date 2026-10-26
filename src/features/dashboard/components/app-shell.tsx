@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Activity,
+  Briefcase,
   Building2,
   HelpCircle,
   Home,
@@ -27,11 +28,17 @@ interface CareHome {
   name: string | null;
 }
 
+interface Organisation {
+  id: string;
+  name: string | null;
+}
+
 interface AppShellProps {
   userEmail?: string | null;
   userRole: boolean;
   careHomes: CareHome[];
   adminCareHomeIds?: string[];
+  organisations?: Organisation[];
   children: React.ReactNode;
 }
 
@@ -67,6 +74,7 @@ export function AppShell({
   userRole,
   careHomes,
   adminCareHomeIds = [],
+  organisations = [],
   children,
 }: AppShellProps) {
   const pathname = usePathname();
@@ -89,11 +97,28 @@ export function AppShell({
     title: "Administration",
     items: [
       { name: "Care homes", href: "/app/admin", icon: Building2 },
+      {
+        name: "Organisations",
+        href: "/app/admin/organisations",
+        icon: Briefcase,
+      },
       { name: "Users", href: "/app/admin/users", icon: Shield },
     ],
   };
 
+  const organisationsSection: NavSection = {
+    title: "Organisations",
+    items: organisations.map((org) => ({
+      name: org.name ?? "Unnamed organisation",
+      href: `/app/organisations/${org.id}`,
+      icon: Briefcase,
+    })),
+  };
+
   const sections: NavSection[] = [careHomeSection];
+  if (organisations.length > 0) {
+    sections.push(organisationsSection);
+  }
   if (userRole) {
     sections.push(adminSection);
   }

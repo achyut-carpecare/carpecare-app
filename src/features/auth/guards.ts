@@ -176,6 +176,31 @@ export async function requirePatientAccess(
   return auth;
 }
 
+/**
+ * Org Admin for the given organisation, or a system admin. Org Admins can
+ * manage each other (add/remove seats, create/rename establishments) - there
+ * is no extra restriction here beyond holding the grant.
+ */
+export async function requireOrganisationAdmin(
+  organisationId: string,
+): Promise<GuardResult> {
+  const auth = await requireAuthenticatedUser();
+  if (auth.error || !auth.profile) return auth;
+
+  if (auth.profile.isSystemAdmin) return auth;
+
+  const membership = await getOrganisationMemberByUserIdAndOrganisationId(
+    db,
+    auth.userId,
+    organisationId,
+  );
+  if (!membership) {
+    return { error: PERMISSION_ERROR };
+  }
+
+  return auth;
+}
+
 export interface EffectiveMembership {
   careHome: UserWithMemberships["memberships"][number]["careHome"];
   role: "admin" | "member" | "it_admin";
