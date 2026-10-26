@@ -102,9 +102,9 @@ export default function VerifyPage({ params }: VerifyPageProps) {
           <CardHeader className="text-center">
             <CardTitle>Verify your email</CardTitle>
             <CardDescription>
-              A care home has shared a seizure record with you. To protect this
-              health information, we will send a one-time verification code to
-              the recipient email address.
+              An establishment has shared a seizure record with you. To protect
+              this health information, we will send a one-time verification code
+              to the recipient email address.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">

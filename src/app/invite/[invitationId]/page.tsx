@@ -54,8 +54,8 @@ export default async function InvitePage({
         <div className="max-w-md text-center space-y-4">
           <h1 className="text-2xl font-bold">Invitation expired</h1>
           <p className="text-muted-foreground">
-            This invitation has expired. Please ask the care home admin to send
-            a new invitation.
+            This invitation has expired. Please ask the establishment admin to
+            send a new invitation.
           </p>
         </div>
       </div>

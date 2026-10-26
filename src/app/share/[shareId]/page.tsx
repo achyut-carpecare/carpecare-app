@@ -40,8 +40,8 @@ export default async function SharePage({
           <CardContent className="p-8 text-center">
             <h1 className="text-xl font-bold mb-2">Link expired</h1>
             <p className="text-muted-foreground">
-              This secure share link has expired. Please contact the care home
-              for a new link.
+              This secure share link has expired. Please contact the
+              establishment for a new link.
             </p>
           </CardContent>
         </Card>
@@ -60,7 +60,7 @@ export default async function SharePage({
               <h1 className="text-xl font-bold mb-2">Invalid link</h1>
               <p className="text-muted-foreground">
                 This share link is missing a required access token. Please
-                request a new link from the care home.
+                request a new link from the establishment.
               </p>
             </CardContent>
           </Card>
@@ -76,7 +76,7 @@ export default async function SharePage({
               <h1 className="text-xl font-bold mb-2">Invalid link</h1>
               <p className="text-muted-foreground">
                 This share link is invalid or has been revoked. Please contact
-                the care home for a new link.
+                the establishment for a new link.
               </p>
             </CardContent>
           </Card>
@@ -144,7 +144,7 @@ export default async function SharePage({
           <AlertDescription>
             This secure share was sent to{" "}
             <strong>{share.recipientEmail ?? "you"}</strong> by{" "}
-            {careHome.name ?? "the care home"}. It expires{" "}
+            {careHome.name ?? "the establishment"}. It expires{" "}
             {share.expiresAt ? formatDateTime(share.expiresAt) : "soon"}.
           </AlertDescription>
         </Alert>
@@ -152,7 +152,7 @@ export default async function SharePage({
         <div className="space-y-1">
           <h1 className="text-2xl font-bold">Seizure record</h1>
           <p className="text-muted-foreground">
-            {patientName} · {careHome.name ?? "Care home"} ·{" "}
+            {patientName} · {careHome.name ?? "Establishment"} ·{" "}
             {formatDateTime(seizureRecord.recordedAt)}
           </p>
         </div>

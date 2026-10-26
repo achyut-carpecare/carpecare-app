@@ -160,7 +160,7 @@ export default async function PatientDetailPage({
                   value={formatDate(patient.dateOfBirth)}
                 />
                 <Stat label="NHS number" value={patient.nhsNumber ?? "—"} />
-                <Stat label="Care home" value={careHome.name ?? "—"} />
+                <Stat label="Establishment" value={careHome.name ?? "—"} />
               </div>
             </CardContent>
           </Card>

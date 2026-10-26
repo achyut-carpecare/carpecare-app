@@ -48,7 +48,7 @@ export default async function AdminDashboardPage() {
     <div className="space-y-6">
       <PageHeader
         title="Admin dashboard"
-        subtitle="A calm overview of all care homes"
+        subtitle="A calm overview of all establishments"
         actions={<AddCareHomeDialog />}
       />
 
@@ -59,7 +59,7 @@ export default async function AdminDashboardPage() {
             <div className="text-3xl font-bold">
               {careHomesWithCounts.length}
             </div>
-            <div className="text-sm text-muted-foreground">Care homes</div>
+            <div className="text-sm text-muted-foreground">Establishments</div>
           </CardContent>
         </Card>
         <Card className="rounded-2xl">
@@ -80,7 +80,7 @@ export default async function AdminDashboardPage() {
 
       <Card className="rounded-2xl">
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg">All care homes</CardTitle>
+          <CardTitle className="text-lg">All establishments</CardTitle>
         </CardHeader>
         <CardContent>
           <Table>
@@ -102,7 +102,7 @@ export default async function AdminDashboardPage() {
                       href={`/app/care-homes/${home.id}`}
                       className="hover:underline"
                     >
-                      {home.name ?? "Unnamed care home"}
+                      {home.name ?? "Unnamed establishment"}
                     </Link>
                   </TableCell>
                   <TableCell>

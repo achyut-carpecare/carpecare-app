@@ -23,7 +23,7 @@ export default async function RegisterPage({
           <h1 className="text-2xl font-bold">Invalid invitation link</h1>
           <p className="text-muted-foreground">
             This registration link is missing required information. Please ask
-            the care home admin to resend the invitation.
+            the establishment admin to resend the invitation.
           </p>
         </div>
       </div>
@@ -43,7 +43,7 @@ export default async function RegisterPage({
           <h1 className="text-2xl font-bold">Invitation no longer valid</h1>
           <p className="text-muted-foreground">
             This invitation has already been used, revoked, or expired. Please
-            ask the care home admin for a new invitation.
+            ask the establishment admin for a new invitation.
           </p>
         </div>
       </div>
@@ -56,8 +56,8 @@ export default async function RegisterPage({
         <div className="max-w-md text-center space-y-4">
           <h1 className="text-2xl font-bold">Invitation expired</h1>
           <p className="text-muted-foreground">
-            This invitation has expired. Please ask the care home admin to send
-            a new invitation.
+            This invitation has expired. Please ask the establishment admin to
+            send a new invitation.
           </p>
         </div>
       </div>
@@ -73,8 +73,8 @@ export default async function RegisterPage({
         <div className="max-w-md text-center space-y-4">
           <h1 className="text-2xl font-bold">Invalid invitation link</h1>
           <p className="text-muted-foreground">
-            The security token in this link is invalid. Please ask the care home
-            admin to resend the invitation.
+            The security token in this link is invalid. Please ask the
+            establishment admin to resend the invitation.
           </p>
         </div>
       </div>

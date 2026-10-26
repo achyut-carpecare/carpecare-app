@@ -89,7 +89,7 @@ export default async function MembersPage({ params }: MembersPageProps) {
     <div className="space-y-6">
       <PageHeader
         title="Team members"
-        subtitle={`Manage who can access ${careHome.name ?? "this care home"}`}
+        subtitle={`Manage who can access ${careHome.name ?? "this establishment"}`}
         actions={
           <div className="flex items-center gap-2">
             {isSystemAdmin && !isMember && (

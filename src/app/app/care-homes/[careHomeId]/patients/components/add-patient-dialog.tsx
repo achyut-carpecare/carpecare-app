@@ -88,7 +88,7 @@ export function AddPatientDialog({ careHomeId }: AddPatientDialogProps) {
           <DialogHeader>
             <DialogTitle>Add resident</DialogTitle>
             <DialogDescription>
-              Add a new resident to this care home.
+              Add a new resident to this establishment.
             </DialogDescription>
           </DialogHeader>
 

@@ -247,7 +247,7 @@ export async function joinCareHomeAction({
       careHomeId,
     );
     if (existing) {
-      return { error: "You are already a member of this care home" };
+      return { error: "You are already a member of this establishment" };
     }
 
     await db.insert(schema.careHomeMembers).values({
@@ -261,7 +261,7 @@ export async function joinCareHomeAction({
 
     return { success: true };
   } catch (error) {
-    console.error("Failed to join care home:", error);
-    return { error: "Failed to join care home" };
+    console.error("Failed to join establishment:", error);
+    return { error: "Failed to join establishment" };
   }
 }

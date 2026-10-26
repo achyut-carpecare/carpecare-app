@@ -36,7 +36,7 @@ export function DeleteCareHomeDialog({ careHome }: DeleteCareHomeDialogProps) {
       return;
     }
 
-    toast.success("Care home deleted");
+    toast.success("Establishment deleted");
   }
 
   return (
@@ -49,11 +49,11 @@ export function DeleteCareHomeDialog({ careHome }: DeleteCareHomeDialogProps) {
       </DialogTrigger>
       <DialogContent className="sm:max-w-md rounded-2xl">
         <DialogHeader>
-          <DialogTitle>Delete care home</DialogTitle>
+          <DialogTitle>Delete establishment</DialogTitle>
           <DialogDescription>
             Are you sure you want to delete{" "}
-            <strong>{careHome.name ?? "this care home"}</strong>? This cannot be
-            undone.
+            <strong>{careHome.name ?? "this establishment"}</strong>? This
+            cannot be undone.
           </DialogDescription>
         </DialogHeader>
         <DialogFooter>

@@ -100,7 +100,7 @@ export async function registerWithInvitationAction(
 
     const careHome = await getCareHomeById(db, invitation.careHomeId);
     if (!careHome) {
-      return { error: "Care home not found" };
+      return { error: "Establishment not found" };
     }
 
     const adminClient = await createAdminClient();

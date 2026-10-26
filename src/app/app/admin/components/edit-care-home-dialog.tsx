@@ -53,7 +53,7 @@ export function EditCareHomeDialog({ careHome }: EditCareHomeDialogProps) {
       return;
     }
 
-    toast.success("Care home updated");
+    toast.success("Establishment updated");
     setOpen(false);
   }
 
@@ -68,9 +68,9 @@ export function EditCareHomeDialog({ careHome }: EditCareHomeDialogProps) {
       <DialogContent className="sm:max-w-md rounded-2xl">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Edit care home</DialogTitle>
+            <DialogTitle>Edit establishment</DialogTitle>
             <DialogDescription>
-              Update the name of this care home.
+              Update the name of this establishment.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">

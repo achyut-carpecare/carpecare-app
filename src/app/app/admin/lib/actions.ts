@@ -26,7 +26,7 @@ async function requireCareHomeCreator(organisationId?: string) {
 async function requireCareHomeOwner(careHomeId: string) {
   const careHome = await getCareHomeById(db, careHomeId);
   if (!careHome) {
-    return { error: "Care home not found" };
+    return { error: "Establishment not found" };
   }
   if (careHome.organisationId) {
     return requireOrganisationAdmin(careHome.organisationId);
@@ -70,7 +70,7 @@ export async function createCareHomeAction(data: {
 
     const trimmedName = data.name.trim();
     if (!trimmedName) {
-      return { error: "Care home name is required" };
+      return { error: "Establishment name is required" };
     }
 
     const careHome = await createCareHome(db, {
@@ -87,8 +87,8 @@ export async function createCareHomeAction(data: {
 
     return { success: true, careHome };
   } catch (error) {
-    console.error("Failed to create care home:", error);
-    return { error: "Failed to create care home" };
+    console.error("Failed to create establishment:", error);
+    return { error: "Failed to create establishment" };
   }
 }
 
@@ -104,7 +104,7 @@ export async function updateCareHomeAction(
 
     const trimmedName = data.name.trim();
     if (!trimmedName) {
-      return { error: "Care home name is required" };
+      return { error: "Establishment name is required" };
     }
 
     const careHome = await updateCareHomeById(db, id, {
@@ -120,8 +120,8 @@ export async function updateCareHomeAction(
 
     return { success: true, careHome };
   } catch (error) {
-    console.error("Failed to update care home:", error);
-    return { error: "Failed to update care home" };
+    console.error("Failed to update establishment:", error);
+    return { error: "Failed to update establishment" };
   }
 }
 
@@ -142,7 +142,7 @@ export async function deleteCareHomeAction(id: string) {
 
     return { success: true, careHome };
   } catch (error) {
-    console.error("Failed to delete care home:", error);
-    return { error: "Failed to delete care home" };
+    console.error("Failed to delete establishment:", error);
+    return { error: "Failed to delete establishment" };
   }
 }

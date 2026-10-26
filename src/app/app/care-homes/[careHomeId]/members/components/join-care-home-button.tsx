@@ -24,7 +24,7 @@ export function JoinCareHomeButton({ careHomeId }: JoinCareHomeButtonProps) {
         return;
       }
 
-      toast.success("You joined this care home as an admin");
+      toast.success("You joined this establishment as an admin");
       router.refresh();
     });
   }

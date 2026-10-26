@@ -59,7 +59,7 @@ export async function inviteMemberAction({
 
     const careHome = await getCareHomeById(db, careHomeId);
     if (!careHome) {
-      return { error: "Care home not found" };
+      return { error: "Establishment not found" };
     }
 
     const members = await getCareHomeMembers(db, careHomeId);
@@ -71,7 +71,7 @@ export async function inviteMemberAction({
     );
     if (isAlreadyMember) {
       return {
-        error: "This email address is already a member of this care home",
+        error: "This email address is already a member of this establishment",
       };
     }
 
@@ -159,7 +159,7 @@ export async function resendInvitationAction(invitationId: string) {
 
     const careHome = await getCareHomeById(db, invitation.careHomeId);
     if (!careHome) {
-      return { error: "Care home not found" };
+      return { error: "Establishment not found" };
     }
 
     const linkToken = generateToken();

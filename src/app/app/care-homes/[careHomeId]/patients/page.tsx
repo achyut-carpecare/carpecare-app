@@ -69,7 +69,7 @@ export default async function PatientsPage({
     <div className="space-y-6">
       <PageHeader
         title="Residents"
-        subtitle={`Everyone at ${careHome.name ?? "this care home"}`}
+        subtitle={`Everyone at ${careHome.name ?? "this establishment"}`}
         actions={
           <>
             <Button asChild variant="secondary" className="rounded-xl">

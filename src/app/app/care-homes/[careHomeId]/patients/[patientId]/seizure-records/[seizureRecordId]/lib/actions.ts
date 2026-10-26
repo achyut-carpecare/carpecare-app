@@ -50,7 +50,9 @@ export async function createSeizureRecordShareAction({
 
     const { patient, careHome } = record;
     if (!patient || !careHome) {
-      return { error: "Seizure record is missing patient or care home data" };
+      return {
+        error: "Seizure record is missing patient or establishment data",
+      };
     }
 
     const auth = await requirePatientAccess(patient.id);

@@ -104,7 +104,7 @@ export default async function EventsPage({
     <div className="space-y-6">
       <PageHeader
         title="All events"
-        subtitle={`Every seizure record logged at ${careHome.name ?? "this care home"}`}
+        subtitle={`Every seizure record logged at ${careHome.name ?? "this establishment"}`}
       />
 
       <Card className="rounded-2xl">

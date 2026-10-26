@@ -39,9 +39,9 @@ export default async function AppPage() {
   if (memberships.length === 0) {
     return (
       <div className="max-w-xl mx-auto py-12 text-center space-y-4">
-        <h1 className="text-2xl font-bold">No care home yet</h1>
+        <h1 className="text-2xl font-bold">No establishment yet</h1>
         <p className="text-muted-foreground">
-          You are not assigned to any care home. Contact your administrator.
+          You are not assigned to any establishment. Contact your administrator.
         </p>
       </div>
     );
@@ -65,8 +65,10 @@ export default async function AppPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold">Your care homes</h1>
-        <p className="text-muted-foreground">Choose a care home to continue.</p>
+        <h1 className="text-2xl font-bold">Your establishments</h1>
+        <p className="text-muted-foreground">
+          Choose an establishment to continue.
+        </p>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -75,7 +77,7 @@ export default async function AppPage() {
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Building2 className="w-5 h-5 text-primary" />
-                {home.name ?? "Unnamed care home"}
+                {home.name ?? "Unnamed establishment"}
               </CardTitle>
               <CardDescription className="capitalize">
                 {home.role.toLowerCase().replace("_", " ")}
@@ -91,7 +93,7 @@ export default async function AppPage() {
               </div>
               <Button asChild className="w-full rounded-xl">
                 <Link href={`/app/care-homes/${home.id}`}>
-                  Open care home
+                  Open establishment
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Link>
               </Button>

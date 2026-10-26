@@ -98,7 +98,7 @@ export default async function CareHomeDashboardPage({
   return (
     <div className="space-y-6">
       <PageHeader
-        title={careHome.name ?? "Care home"}
+        title={careHome.name ?? "Establishment"}
         subtitle={`${formatCareHomeKind(careHome.kind)} · Welcome back. Here is what is happening.`}
         actions={
           <>

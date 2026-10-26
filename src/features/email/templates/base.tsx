@@ -41,7 +41,7 @@ export function BaseEmail({ preview, children, footer }: BaseEmailProps) {
           <Section style={footerSection}>
             <Text style={footerText}>
               {footer ??
-                "Sent by Carpe Care · You're receiving this because a care home shared a seizure record with you."}
+                "Sent by Carpe Care · You're receiving this because an establishment shared a seizure record with you."}
             </Text>
           </Section>
         </Container>

@@ -29,7 +29,7 @@ export function CareHomeSwitcher({
   function handleChange(careHomeId: string) {
     if (careHomeId === currentCareHomeId) return;
 
-    // Preserve the path structure but swap the care home id.
+    // Preserve the path structure but swap the establishment id.
     const newPath = pathname.replace(
       /\/app\/care-homes\/[^\/]+/,
       `/app/care-homes/${careHomeId}`,
@@ -41,12 +41,12 @@ export function CareHomeSwitcher({
   return (
     <Select value={currentCareHomeId} onValueChange={handleChange}>
       <SelectTrigger className="w-full rounded-xl border-border bg-muted/50 text-xs">
-        <SelectValue placeholder="Select care home" />
+        <SelectValue placeholder="Select establishment" />
       </SelectTrigger>
       <SelectContent>
         {careHomes.map((home) => (
           <SelectItem key={home.id} value={home.id}>
-            {home.name ?? "Unnamed care home"}
+            {home.name ?? "Unnamed establishment"}
           </SelectItem>
         ))}
       </SelectContent>

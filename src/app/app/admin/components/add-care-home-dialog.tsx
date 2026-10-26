@@ -54,7 +54,7 @@ export function AddCareHomeDialog() {
       return;
     }
 
-    toast.success("Care home created");
+    toast.success("Establishment created");
     setName("");
     setKind("residential");
     setOpen(false);
@@ -65,15 +65,15 @@ export function AddCareHomeDialog() {
       <DialogTrigger asChild>
         <Button className="rounded-xl">
           <Plus className="w-4 h-4 mr-2" />
-          Add care home
+          Add establishment
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-md rounded-2xl">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Add care home</DialogTitle>
+            <DialogTitle>Add establishment</DialogTitle>
             <DialogDescription>
-              Create a new care home in the system.
+              Create a new establishment in the system.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -83,7 +83,7 @@ export function AddCareHomeDialog() {
                 id="name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Sunrise Care Home"
+                placeholder="e.g. Sunrise House"
                 className="rounded-xl"
                 required
               />

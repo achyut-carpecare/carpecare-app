@@ -144,7 +144,7 @@ export function MemberAccessDialog({
                     Every resident at this establishment
                   </span>
                   <span className="text-sm text-muted-foreground">
-                    The default - matches a typical care home carer.
+                    The default - matches most staff.
                   </span>
                 </Label>
               </div>

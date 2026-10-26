@@ -75,8 +75,8 @@ export function InviteMemberDialog({ careHomeId }: InviteMemberDialogProps) {
           <DialogHeader>
             <DialogTitle>Invite team member</DialogTitle>
             <DialogDescription>
-              Send a secure email invitation to join this care home. They will
-              verify their email with a one-time code before joining.
+              Send a secure email invitation to join this establishment. They
+              will verify their email with a one-time code before joining.
             </DialogDescription>
           </DialogHeader>
 

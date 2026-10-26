@@ -84,7 +84,7 @@ export function AppShell({
   const currentCareHomeId = careHomeMatch?.[1] ?? careHomes[0]?.id;
 
   const careHomeSection: NavSection = {
-    title: "Care home",
+    title: "Establishment",
     items: [
       { name: "Dashboard", href: "/app", icon: LayoutDashboard },
       { name: "Residents", href: "/patients", icon: Users },
@@ -96,7 +96,7 @@ export function AppShell({
   const adminSection: NavSection = {
     title: "Administration",
     items: [
-      { name: "Care homes", href: "/app/admin", icon: Building2 },
+      { name: "Establishments", href: "/app/admin", icon: Building2 },
       {
         name: "Organisations",
         href: "/app/admin/organisations",
@@ -148,7 +148,7 @@ export function AppShell({
     : false;
 
   const currentCareHome = careHomes.find((h) => h.id === currentCareHomeId);
-  const currentCareHomeName = currentCareHome?.name ?? "Care home";
+  const currentCareHomeName = currentCareHome?.name ?? "Establishment";
   const viewingNonMemberCareHome =
     !!currentCareHomeId && !isMemberOfCurrentCareHome;
 
@@ -188,7 +188,7 @@ export function AppShell({
                   {section.title}
                 </span>
               </div>
-              {section.title === "Care home" && (
+              {section.title === "Establishment" && (
                 <div className="px-3 pb-2">
                   {careHomes.length > 0 ? (
                     <CareHomeSwitcher
@@ -197,7 +197,7 @@ export function AppShell({
                     />
                   ) : (
                     <div className="text-xs text-muted-foreground px-1">
-                      Not a member of any care home
+                      Not a member of any establishment
                     </div>
                   )}
                   {viewingNonMemberCareHome && (

@@ -19,7 +19,7 @@ export function InvitationEmail({
   const preview = `${inviterName} has invited you to join ${careHomeName} on Carpe Care.`;
   const roleLabel =
     role === "admin"
-      ? "care home admin"
+      ? "establishment admin"
       : role === "it_admin"
         ? "IT administrator"
         : "team member";
@@ -43,7 +43,7 @@ export function InvitationEmail({
       </Section>
       <Text style={emailStyles.text}>
         This invitation expires on {expiresAt}. Click the button above to create
-        your account and join the care home.
+        your account and join the establishment.
       </Text>
       <Text style={emailStyles.footer}>
         If you were not expecting this email, you can safely ignore it.

@@ -94,8 +94,8 @@ export function RegisterForm({
       <CardHeader className="text-center">
         <CardTitle>Create your account</CardTitle>
         <CardDescription>
-          You have been invited to join a care home on Carpe Care. Complete the
-          form below to get started.
+          You have been invited to join an establishment on Carpe Care. Complete
+          the form below to get started.
         </CardDescription>
       </CardHeader>
       <CardContent>
