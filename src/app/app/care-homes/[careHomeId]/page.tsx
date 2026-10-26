@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { db } from "@/features/database";
 import { createClient } from "@/features/auth/server";
+import { requireCareHomeMember } from "@/features/auth/guards";
 import { PageHeader } from "@/features/dashboard/components/page-header";
 import { AccessDenied } from "@/features/dashboard/components/access-denied";
 import {
@@ -29,7 +30,6 @@ import {
   getRecentActivity,
   getResidentsToWatch,
   getUnopenedShares,
-  getUserWithMemberships,
   getVideoCoverage,
 } from "@/features/database/queries";
 import { firstDayOfMonth } from "@/features/database/lib/date";
@@ -61,17 +61,8 @@ export default async function CareHomeDashboardPage({
     redirect("/auth/login");
   }
 
-  const result = await getUserWithMemberships(db, user.id);
-
-  if (!result) {
-    redirect("/auth/login");
-  }
-
-  const { profile, memberships } = result;
-
-  const isMember = memberships.some((m) => m.careHome.id === careHomeId);
-
-  if (!isMember && !profile.isSystemAdmin) {
+  const auth = await requireCareHomeMember(careHomeId);
+  if (auth.error) {
     return <AccessDenied />;
   }
 

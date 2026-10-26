@@ -3,7 +3,9 @@
 import { db } from "@/features/database";
 import {
   getCareHomeById,
+  getCareHomesForOrganisation,
   getOrganisationMemberByUserIdAndOrganisationId,
+  getOrganisationsForUser,
   getPatientAccessGrant,
   getPatientById,
   getUserWithMemberships,
@@ -172,6 +174,63 @@ export async function requirePatientAccess(
   }
 
   return auth;
+}
+
+export interface EffectiveMembership {
+  careHome: UserWithMemberships["memberships"][number]["careHome"];
+  role: "admin" | "member" | "it_admin";
+  accessMode: "home_wide" | "person_scoped";
+}
+
+export interface EffectiveAccessOk {
+  error?: undefined;
+  userId: string;
+  profile: UserWithMemberships["profile"];
+  memberships: EffectiveMembership[];
+}
+
+export type EffectiveAccessResult = EffectiveAccessOk | GuardErr;
+
+/**
+ * Every care home this user has access to - their direct care_home_members
+ * rows, plus every home under an organisation they're an Org Admin of
+ * (shown as admin/home_wide, matching what the cascade in
+ * requireCareHomeAdmin actually grants). Use this instead of reading
+ * `memberships` straight off requireAuthenticatedUser() wherever the UI
+ * needs the full list - the care-home switcher, the "your care homes"
+ * landing page - rather than a single yes/no check on one care home.
+ */
+export async function getEffectiveMemberships(): Promise<EffectiveAccessResult> {
+  const auth = await requireAuthenticatedUser();
+  if (auth.error || !auth.profile) return auth;
+
+  const byId = new Map<string, EffectiveMembership>(
+    auth.memberships.map((m) => [
+      m.careHome.id,
+      { careHome: m.careHome, role: m.role, accessMode: m.accessMode },
+    ]),
+  );
+
+  const orgs = await getOrganisationsForUser(db, auth.userId);
+  for (const org of orgs) {
+    const homes = await getCareHomesForOrganisation(db, org.id);
+    for (const careHome of homes) {
+      const existing = byId.get(careHome.id);
+      if (!existing || existing.role !== "admin") {
+        byId.set(careHome.id, {
+          careHome,
+          role: "admin",
+          accessMode: "home_wide",
+        });
+      }
+    }
+  }
+
+  return {
+    userId: auth.userId,
+    profile: auth.profile,
+    memberships: Array.from(byId.values()),
+  };
 }
 
 /**

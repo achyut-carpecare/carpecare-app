@@ -11,10 +11,8 @@ import {
 } from "@/components/ui/card";
 import { db } from "@/features/database";
 import { createClient } from "@/features/auth/server";
-import {
-  getCareHomeCounts,
-  getUserWithMemberships,
-} from "@/features/database/queries";
+import { getEffectiveMemberships } from "@/features/auth/guards";
+import { getCareHomeCounts } from "@/features/database/queries";
 
 export default async function AppPage() {
   const supabase = await createClient();
@@ -26,9 +24,9 @@ export default async function AppPage() {
     redirect("/auth/login");
   }
 
-  const result = await getUserWithMemberships(db, user.id);
+  const result = await getEffectiveMemberships();
 
-  if (!result) {
+  if (result.error || !result.profile) {
     redirect("/auth/login");
   }
 

@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation";
-import { db } from "@/features/database";
 import { createClient } from "@/features/auth/server";
+import { getEffectiveMemberships } from "@/features/auth/guards";
 import { AppShell } from "@/features/dashboard/components/app-shell";
-import { getUserWithMemberships } from "@/features/database/queries";
 
 export default async function AppLayout({
   children,
@@ -18,9 +17,9 @@ export default async function AppLayout({
     redirect("/auth/login");
   }
 
-  const result = await getUserWithMemberships(db, user.id);
+  const result = await getEffectiveMemberships();
 
-  if (!result) {
+  if (result.error || !result.profile) {
     redirect("/auth/login");
   }
 

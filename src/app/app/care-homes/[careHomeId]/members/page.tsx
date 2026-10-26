@@ -2,13 +2,14 @@ import { redirect, notFound } from "next/navigation";
 import { createClient } from "@/features/auth/server";
 import { db } from "@/features/database";
 import { getAuthUserEmailsByIds } from "@/features/auth/admin";
+import { requireCareHomeAdmin } from "@/features/auth/guards";
 import { PageHeader } from "@/features/dashboard/components/page-header";
 import { AccessDenied } from "@/features/dashboard/components/access-denied";
 import {
   getCareHomeById,
   getCareHomeInvitations,
+  getCareHomeMemberByUserIdAndCareHomeId,
   getCareHomeMembersWithProfiles,
-  getUserWithMemberships,
 } from "@/features/database/queries";
 import { InviteMemberDialog } from "./components/invite-member-dialog";
 import { JoinCareHomeButton } from "./components/join-care-home-button";
@@ -30,22 +31,19 @@ export default async function MembersPage({ params }: MembersPageProps) {
     redirect("/auth/login");
   }
 
-  const result = await getUserWithMemberships(db, user.id);
-  if (!result) {
-    redirect("/auth/login");
-  }
-
-  const { profile, memberships } = result;
-
-  const isSystemAdmin = profile.isSystemAdmin;
-  const membership = memberships.find((m) => m.careHome.id === careHomeId);
-  const isMember = membership != null;
-  const isCareHomeAdmin = membership?.role === "admin";
-  const canManage = isSystemAdmin || isCareHomeAdmin;
-
-  if (!canManage) {
+  const auth = await requireCareHomeAdmin(careHomeId);
+  if (auth.error || !auth.userId || !auth.profile) {
     return <AccessDenied />;
   }
+
+  const isSystemAdmin = auth.profile.isSystemAdmin;
+  const canManage = true;
+  const directMembership = await getCareHomeMemberByUserIdAndCareHomeId(
+    db,
+    auth.userId,
+    careHomeId,
+  );
+  const isMember = directMembership != null;
 
   const careHome = await getCareHomeById(db, careHomeId);
   if (!careHome) {

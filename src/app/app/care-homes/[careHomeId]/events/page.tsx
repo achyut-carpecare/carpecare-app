@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createClient } from "@/features/auth/server";
+import { requireCareHomeMember } from "@/features/auth/guards";
 import { db } from "@/features/database";
 import {
   getCareHomeById,
@@ -21,7 +22,6 @@ import {
   getSeizureRecordsForCareHome,
   countSeizureRecordsForCareHome,
   getDistinctSeizureTypesForCareHome,
-  getUserWithMemberships,
 } from "@/features/database/queries";
 import { PageHeader } from "@/features/dashboard/components/page-header";
 import { AccessDenied } from "@/features/dashboard/components/access-denied";
@@ -73,15 +73,8 @@ export default async function EventsPage({
     redirect("/auth/login");
   }
 
-  const result = await getUserWithMemberships(db, user.id);
-  if (!result) {
-    redirect("/auth/login");
-  }
-
-  const { profile, memberships } = result;
-  const isMember = memberships.some((m) => m.careHome.id === careHomeId);
-
-  if (!isMember && !profile.isSystemAdmin) {
+  const auth = await requireCareHomeMember(careHomeId);
+  if (auth.error) {
     return <AccessDenied />;
   }
 

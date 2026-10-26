@@ -6,11 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { createClient } from "@/features/auth/server";
+import {
+  requireCareHomeAdmin,
+  requireCareHomeMember,
+} from "@/features/auth/guards";
 import { db } from "@/features/database";
 import {
   getCareHomeById,
   getPatientsWithLastSeizure,
-  getUserWithMemberships,
 } from "@/features/database/queries";
 import { AccessDenied } from "@/features/dashboard/components/access-denied";
 import { AddPatientDialog } from "./components/add-patient-dialog";
@@ -39,19 +42,13 @@ export default async function PatientsPage({
     redirect("/auth/login");
   }
 
-  const userData = await getUserWithMemberships(db, authUser.id);
-  if (!userData) {
-    redirect("/auth/login");
-  }
-
-  const { profile, memberships } = userData;
-  const membership = memberships.find((m) => m.careHome.id === careHomeId);
-
-  if (!membership && !profile.isSystemAdmin) {
+  const auth = await requireCareHomeMember(careHomeId);
+  if (auth.error) {
     return <AccessDenied />;
   }
 
-  const isAdmin = profile.isSystemAdmin || membership?.role === "admin";
+  const adminCheck = await requireCareHomeAdmin(careHomeId);
+  const isAdmin = !adminCheck.error;
 
   const careHome = await getCareHomeById(db, careHomeId);
   if (!careHome) {
