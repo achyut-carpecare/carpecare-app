@@ -90,7 +90,10 @@ function ProgressBarInner() {
 
     const originalPushState = window.history.pushState.bind(window.history);
     window.history.pushState = function (...args) {
-      start();
+      // Next can call pushState from inside a useInsertionEffect (which
+      // forbids synchronous state updates), so defer start() to its own
+      // task instead of running it in the same call stack.
+      setTimeout(start, 0);
       return originalPushState(...args);
     };
 
