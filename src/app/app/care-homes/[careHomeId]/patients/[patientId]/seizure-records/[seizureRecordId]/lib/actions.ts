@@ -18,7 +18,7 @@ import {
   sendShareNotificationEmail,
 } from "@/features/email";
 import { formatDateTime, formatName } from "@/features/dashboard/lib/format";
-import { requirePatientAccess } from "@/features/auth/guards";
+import { requirePatientMutationAccess } from "@/features/auth/guards";
 import { getAuthUserEmailsByIds } from "@/features/auth/admin";
 import {
   assertOwnsVideoFile,
@@ -56,7 +56,7 @@ export async function createSeizureRecordShareAction({
       };
     }
 
-    const auth = await requirePatientAccess(patient.id);
+    const auth = await requirePatientMutationAccess(patient.id);
     if (auth.error || !auth.profile) {
       return { error: auth.error };
     }
@@ -174,7 +174,7 @@ export async function deleteSeizureRecordAction({
   seizureRecordId: string;
 }) {
   try {
-    const auth = await requirePatientAccess(patientId);
+    const auth = await requirePatientMutationAccess(patientId);
     if (auth.error) {
       return { error: auth.error };
     }
@@ -224,7 +224,7 @@ export async function updateSeizureRecordAction({
   videoId?: string;
 }) {
   try {
-    const auth = await requirePatientAccess(patientId);
+    const auth = await requirePatientMutationAccess(patientId);
     if (auth.error || !auth.userId) {
       return {
         error: auth.error ?? "You do not have permission to edit this record",

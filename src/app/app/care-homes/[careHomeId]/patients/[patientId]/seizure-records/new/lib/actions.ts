@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { db } from "@/features/database";
 import { createSeizureRecord } from "@/features/database/queries";
-import { requirePatientAccess } from "@/features/auth/guards";
+import { requirePatientMutationAccess } from "@/features/auth/guards";
 import { assertOwnsVideoFile } from "@/features/storage/actions";
 
 export async function createSeizureRecordAction({
@@ -32,7 +32,7 @@ export async function createSeizureRecordAction({
       return { error: "Seizure type is required" };
     }
 
-    const auth = await requirePatientAccess(patientId);
+    const auth = await requirePatientMutationAccess(patientId);
     if (auth.error || !auth.userId) {
       return {
         error:

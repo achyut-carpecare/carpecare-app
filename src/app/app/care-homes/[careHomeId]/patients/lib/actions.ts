@@ -4,8 +4,8 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/features/database";
 import { createPatient, updatePatientById } from "@/features/database/queries";
 import {
-  requireCareHomeAdmin,
-  requirePatientAccess,
+  requirePatientMutationAccess,
+  requireResidentRosterAdmin,
 } from "@/features/auth/guards";
 
 export async function updatePatientAction({
@@ -24,7 +24,7 @@ export async function updatePatientAction({
   nhsNumber?: string;
 }) {
   try {
-    const auth = await requirePatientAccess(patientId);
+    const auth = await requirePatientMutationAccess(patientId);
     if (auth.error) {
       return { error: auth.error };
     }
@@ -76,7 +76,7 @@ export async function createPatientAction({
   nhsNumber?: string;
 }) {
   try {
-    const auth = await requireCareHomeAdmin(careHomeId);
+    const auth = await requireResidentRosterAdmin(careHomeId);
     if (auth.error) {
       return { error: auth.error };
     }

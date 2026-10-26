@@ -114,8 +114,9 @@ export async function requireCareHomeAdmin(
 /**
  * Admin or IT Admin within the given care home, an org-cascade admin, or a
  * system admin. For account-lifecycle actions only (invite/remove a staff
- * login, assign person-scoped access) - never clinical data. IT Admin never
- * satisfies requireCareHomeAdmin or requirePatientAccess.
+ * login) - never clinical data, and never who-sees-what-resident governance
+ * (see requireAccessGovernor for that). IT Admin never satisfies
+ * requireCareHomeAdmin or requirePatientAccess.
  */
 export async function requireCareHomeAccountManager(
   careHomeId: string,
@@ -136,19 +137,58 @@ export async function requireCareHomeAccountManager(
 }
 
 /**
- * Can this user view, record, edit, delete, or share data for this specific
- * patient? Admins and org-cascade admins always pass. A home-wide member
- * passes for any patient at their care home. A person-scoped member only
- * passes if they hold an explicit patient_access_grants row for this
- * patient. IT Admin never passes - account management isn't clinical access.
+ * Admin or IT Admin within the given care home, or an org-cascade admin -
+ * same tier as requireCareHomeAccountManager, but deliberately WITHOUT the
+ * System Admin bypass. Deciding who can see which resident's clinical data
+ * is a clinical-governance call that should stay inside the establishment's
+ * own chain of command, not something platform support can reconfigure by
+ * default. Used only for assigning/changing a member's person-scoped access.
  */
-export async function requirePatientAccess(
-  patientId: string,
+export async function requireAccessGovernor(
+  careHomeId: string,
 ): Promise<GuardResult> {
   const auth = await requireAuthenticatedUser();
   if (auth.error || !auth.profile) return auth;
 
-  if (auth.profile.isSystemAdmin) return auth;
+  const membership = auth.memberships.find((m) => m.careHome.id === careHomeId);
+  if (membership?.role === "admin" || membership?.role === "it_admin") {
+    return auth;
+  }
+
+  if (await hasOrgCascadeAdmin(auth.userId, careHomeId)) return auth;
+
+  return { error: PERMISSION_ERROR };
+}
+
+/**
+ * Admin role within the given care home, or an org-cascade admin -
+ * deliberately WITHOUT the System Admin bypass that requireCareHomeAdmin
+ * has. Adding or editing a resident record is resident-data governance, not
+ * platform account administration. Used only for creating a new patient
+ * (requirePatientMutationAccess covers an existing one).
+ */
+export async function requireResidentRosterAdmin(
+  careHomeId: string,
+): Promise<GuardResult> {
+  const auth = await requireAuthenticatedUser();
+  if (auth.error || !auth.profile) return auth;
+
+  const membership = auth.memberships.find((m) => m.careHome.id === careHomeId);
+  if (membership?.role === "admin") return auth;
+
+  if (await hasOrgCascadeAdmin(auth.userId, careHomeId)) return auth;
+
+  return { error: PERMISSION_ERROR };
+}
+
+async function evaluatePatientAccess(
+  patientId: string,
+  { allowSystemAdminBypass }: { allowSystemAdminBypass: boolean },
+): Promise<GuardResult> {
+  const auth = await requireAuthenticatedUser();
+  if (auth.error || !auth.profile) return auth;
+
+  if (allowSystemAdminBypass && auth.profile.isSystemAdmin) return auth;
 
   const patient = await getPatientById(db, patientId);
   if (!patient?.careHomeId) {
@@ -174,6 +214,34 @@ export async function requirePatientAccess(
   }
 
   return auth;
+}
+
+/**
+ * Can this user VIEW data for this specific patient? System Admin always
+ * passes - platform oversight is read access, not hands-on clinical
+ * authorship (see requirePatientMutationAccess for that line). Otherwise
+ * identical rules: admins and org-cascade admins always pass, a home-wide
+ * member passes for any patient at their care home, a person-scoped member
+ * only passes with an explicit patient_access_grants row. IT Admin never
+ * passes - account management isn't clinical access.
+ */
+export async function requirePatientAccess(
+  patientId: string,
+): Promise<GuardResult> {
+  return evaluatePatientAccess(patientId, { allowSystemAdminBypass: true });
+}
+
+/**
+ * Can this user record, edit, delete, or share data for this specific
+ * patient? Same rules as requirePatientAccess, but System Admin does NOT
+ * bypass - platform admins get oversight visibility, not the ability to
+ * author or hand out clinical footage for a patient they have no
+ * establishment relationship with.
+ */
+export async function requirePatientMutationAccess(
+  patientId: string,
+): Promise<GuardResult> {
+  return evaluatePatientAccess(patientId, { allowSystemAdminBypass: false });
 }
 
 /**

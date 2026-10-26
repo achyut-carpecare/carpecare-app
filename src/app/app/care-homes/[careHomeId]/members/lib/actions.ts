@@ -6,6 +6,7 @@ import { db } from "@/features/database";
 import { schema } from "@/features/database";
 import { getAuthUserEmailsByIds } from "@/features/auth/admin";
 import {
+  requireAccessGovernor,
   requireCareHomeAccountManager,
   requireCareHomeAdmin,
 } from "@/features/auth/guards";
@@ -311,7 +312,7 @@ export async function updateMemberAccessAction({
       return { error: "Member not found" };
     }
 
-    const auth = await requireCareHomeAccountManager(member.careHomeId);
+    const auth = await requireAccessGovernor(member.careHomeId);
     if (auth.error) {
       return { error: auth.error };
     }
