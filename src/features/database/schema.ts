@@ -96,7 +96,9 @@ export const careHomeMembers = pgTable(
     // explicit patient_access_grants row for, instead of every patient at
     // the care home. Defaults to home_wide so every existing membership
     // keeps today's behavior unchanged.
-    accessMode: careHomeMemberAccessMode().default("home_wide").notNull(),
+    accessMode: careHomeMemberAccessMode("access_mode")
+      .default("home_wide")
+      .notNull(),
     createdAt: timestamp("created_at", { mode: "string" })
       .defaultNow()
       .notNull(),
