@@ -7,6 +7,7 @@ import {
   deleteSeizureRecordById,
   deleteSeizureRecordShareById,
   getCareHomeMembersWithProfiles,
+  getOrganisationMembers,
   getSeizureRecordWithDetails,
   updateSeizureRecordById,
 } from "@/features/database/queries";
@@ -111,17 +112,28 @@ export async function createSeizureRecordShareAction({
           db,
           careHome.id,
         );
-        const admins = membersWithProfiles.filter(
-          (m) => m.member.role === "admin",
+        const directAdminIds = membersWithProfiles
+          .filter((m) => m.member.role === "admin")
+          .map((m) => m.profile.id);
+
+        // Org Admins who manage this establishment purely via the org
+        // cascade (no direct care_home_members row) should hear about
+        // staff shares too - they're full admins here either way.
+        const orgAdminIds = careHome.organisationId
+          ? (await getOrganisationMembers(db, careHome.organisationId)).map(
+              (m) => m.userId,
+            )
+          : [];
+
+        const adminIds = Array.from(
+          new Set([...directAdminIds, ...orgAdminIds]),
         );
-        const adminEmailById = await getAuthUserEmailsByIds(
-          admins.map((a) => a.profile.id),
-        );
+        const adminEmailById = await getAuthUserEmailsByIds(adminIds);
         const recordUrl = `${appUrl}/app/care-homes/${careHome.id}/patients/${patient.id}/seizure-records/${seizureRecordId}`;
 
         await Promise.all(
-          admins.map((admin) => {
-            const adminEmail = adminEmailById.get(admin.profile.id);
+          adminIds.map((adminId) => {
+            const adminEmail = adminEmailById.get(adminId);
             if (!adminEmail) return Promise.resolve();
             return sendShareNotificationEmail({
               to: adminEmail,

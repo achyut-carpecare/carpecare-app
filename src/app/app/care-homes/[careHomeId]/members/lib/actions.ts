@@ -344,6 +344,19 @@ export async function updateMemberAccessAction({
         ),
         ...toRemove.map((grant) => deletePatientAccessGrantById(db, grant.id)),
       ]);
+    } else {
+      // Switching to home-wide doesn't need any grants (home-wide access
+      // short-circuits past the grant check), but leaving old ones behind
+      // would silently resurrect a stale selection if this member is ever
+      // switched back to person-scoped later.
+      const staleGrants = await getPatientAccessGrantsForUser(
+        db,
+        member.userId,
+        member.careHomeId,
+      );
+      await Promise.all(
+        staleGrants.map((grant) => deletePatientAccessGrantById(db, grant.id)),
+      );
     }
 
     revalidatePath(`/app/care-homes/${member.careHomeId}/members`);
