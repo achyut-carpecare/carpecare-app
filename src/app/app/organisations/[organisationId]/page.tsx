@@ -12,11 +12,14 @@ import {
   getCareHomesForOrganisation,
   getOrganisationById,
   getOrganisationMembersWithProfiles,
+  getStandaloneCareHomes,
 } from "@/features/database/queries";
 import { PageHeader } from "@/features/dashboard/components/page-header";
 import { AccessDenied } from "@/features/dashboard/components/access-denied";
 import { formatCareHomeKind } from "@/features/dashboard/lib/format";
 import { AddCareHomeToOrgDialog } from "./components/add-care-home-to-org-dialog";
+import { AttachCareHomeDialog } from "./components/attach-care-home-dialog";
+import { DetachCareHomeButton } from "./components/detach-care-home-button";
 import { RenameOrganisationDialog } from "./components/rename-organisation-dialog";
 import { AddOrgMemberDialog } from "./components/add-org-member-dialog";
 import { OrgMembersList } from "./components/org-members-list";
@@ -41,11 +44,15 @@ export default async function OrganisationPage({
     notFound();
   }
 
-  const [homes, membersWithProfiles, candidateProfiles] = await Promise.all([
-    getCareHomesForOrganisation(db, organisationId),
-    getOrganisationMembersWithProfiles(db, organisationId),
-    getCareHomeAdminsForOrganisation(db, organisationId),
-  ]);
+  const [homes, membersWithProfiles, candidateProfiles, standaloneCareHomes] =
+    await Promise.all([
+      getCareHomesForOrganisation(db, organisationId),
+      getOrganisationMembersWithProfiles(db, organisationId),
+      getCareHomeAdminsForOrganisation(db, organisationId),
+      auth.profile.isSystemAdmin
+        ? getStandaloneCareHomes(db)
+        : Promise.resolve([]),
+    ]);
 
   const homesWithCounts = await Promise.all(
     homes.map(async (home) => {
@@ -147,7 +154,15 @@ export default async function OrganisationPage({
       <Card className="rounded-2xl">
         <CardHeader className="pb-3 flex flex-row items-center justify-between">
           <CardTitle className="text-lg">Establishments</CardTitle>
-          <AddCareHomeToOrgDialog organisationId={organisationId} />
+          <div className="flex items-center gap-2">
+            {auth.profile.isSystemAdmin && (
+              <AttachCareHomeDialog
+                organisationId={organisationId}
+                standaloneCareHomes={standaloneCareHomes}
+              />
+            )}
+            <AddCareHomeToOrgDialog organisationId={organisationId} />
+          </div>
         </CardHeader>
         <CardContent>
           {homesWithCounts.length === 0 ? (
@@ -157,12 +172,11 @@ export default async function OrganisationPage({
           ) : (
             <div className="space-y-3">
               {homesWithCounts.map((home) => (
-                <Link
+                <div
                   key={home.id}
-                  href={`/app/care-homes/${home.id}`}
                   className="flex items-center justify-between rounded-xl border p-4 hover:border-primary/30 transition-colors"
                 >
-                  <div>
+                  <Link href={`/app/care-homes/${home.id}`} className="flex-1">
                     <div className="font-medium flex items-center gap-2">
                       {home.name ?? "Unnamed establishment"}
                       <Badge variant="outline">
@@ -173,8 +187,14 @@ export default async function OrganisationPage({
                       {home.patientCount} residents · {home.memberCount} staff ·{" "}
                       {home.eventsThisMonth} events this month
                     </div>
-                  </div>
-                </Link>
+                  </Link>
+                  {auth.profile.isSystemAdmin && (
+                    <DetachCareHomeButton
+                      careHomeId={home.id}
+                      careHomeName={home.name ?? "this establishment"}
+                    />
+                  )}
+                </div>
               ))}
             </div>
           )}

@@ -6,7 +6,9 @@ import {
   createOrganisationMember,
   deleteOrganisationById,
   deleteOrganisationMemberById,
+  getCareHomeById,
   getOrganisationMemberById,
+  updateCareHomeById,
   updateOrganisationById,
 } from "@/features/database/queries";
 import {
@@ -90,6 +92,74 @@ export async function removeOrganisationMemberAction(
   } catch (error) {
     console.error("Failed to remove organisation member:", error);
     return { error: "Failed to remove senior manager" };
+  }
+}
+
+export async function attachCareHomeToOrganisationAction({
+  careHomeId,
+  organisationId,
+}: {
+  careHomeId: string;
+  organisationId: string;
+}) {
+  try {
+    // Cross-tenant structural move - gated to System Admin rather than Org
+    // Admin alone, so an org can't unilaterally absorb an unrelated
+    // establishment it doesn't already have any relationship with.
+    const auth = await requireSystemAdmin();
+    if (auth.error) {
+      return { error: auth.error };
+    }
+
+    const careHome = await getCareHomeById(db, careHomeId);
+    if (!careHome) {
+      return { error: "Establishment not found" };
+    }
+    if (careHome.organisationId) {
+      return {
+        error: "This establishment already belongs to an organisation",
+      };
+    }
+
+    await updateCareHomeById(db, careHomeId, { organisationId });
+
+    revalidatePath(`/app/organisations/${organisationId}`);
+    revalidatePath("/app/admin");
+    revalidatePath("/app/admin/organisations");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to attach establishment to organisation:", error);
+    return { error: "Failed to attach establishment" };
+  }
+}
+
+export async function detachCareHomeFromOrganisationAction(careHomeId: string) {
+  try {
+    const auth = await requireSystemAdmin();
+    if (auth.error) {
+      return { error: auth.error };
+    }
+
+    const careHome = await getCareHomeById(db, careHomeId);
+    if (!careHome) {
+      return { error: "Establishment not found" };
+    }
+
+    const organisationId = careHome.organisationId;
+
+    await updateCareHomeById(db, careHomeId, { organisationId: null });
+
+    if (organisationId) {
+      revalidatePath(`/app/organisations/${organisationId}`);
+    }
+    revalidatePath("/app/admin");
+    revalidatePath("/app/admin/organisations");
+
+    return { success: true };
+  } catch (error) {
+    console.error("Failed to detach establishment from organisation:", error);
+    return { error: "Failed to detach establishment" };
   }
 }
 

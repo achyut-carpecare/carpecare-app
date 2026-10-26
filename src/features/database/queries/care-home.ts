@@ -1,6 +1,16 @@
-import { eq } from "drizzle-orm";
+import { isNull, eq } from "drizzle-orm";
 import { schema, type DB } from "..";
 import type { DBInsertTables, DBTables, DBUpdateTables } from "../types";
+
+/** Establishments not currently part of any organisation - candidates to attach to one. */
+export async function getStandaloneCareHomes(
+  db: DB,
+): Promise<DBTables["careHome"][]> {
+  return await db
+    .select()
+    .from(schema.careHome)
+    .where(isNull(schema.careHome.organisationId));
+}
 
 export async function getCareHomes(
   db: DB,
