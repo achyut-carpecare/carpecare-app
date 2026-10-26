@@ -14,19 +14,38 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { createCareHomeAction } from "../lib/actions";
 import { toast } from "@/components/ui/sonner";
+
+type Kind = "family" | "domiciliary" | "residential";
+
+const KIND_DESCRIPTIONS: Record<Kind, string> = {
+  family:
+    "No formal care provider - a family or friends looking after a loved one at home.",
+  domiciliary:
+    "A professional provider visiting service users in their own, separate homes.",
+  residential:
+    "A professional provider running a shared residential site with multiple residents.",
+};
 
 export function AddCareHomeDialog() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
+  const [kind, setKind] = useState<Kind>("residential");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setIsSubmitting(true);
 
-    const result = await createCareHomeAction({ name });
+    const result = await createCareHomeAction({ name, kind });
 
     setIsSubmitting(false);
 
@@ -37,6 +56,7 @@ export function AddCareHomeDialog() {
 
     toast.success("Care home created");
     setName("");
+    setKind("residential");
     setOpen(false);
   }
 
@@ -67,6 +87,22 @@ export function AddCareHomeDialog() {
                 className="rounded-xl"
                 required
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="kind">Type</Label>
+              <Select value={kind} onValueChange={(v) => setKind(v as Kind)}>
+                <SelectTrigger id="kind" className="rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="family">Family</SelectItem>
+                  <SelectItem value="domiciliary">Domiciliary care</SelectItem>
+                  <SelectItem value="residential">Residential home</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">
+                {KIND_DESCRIPTIONS[kind]}
+              </p>
             </div>
           </div>
           <DialogFooter>

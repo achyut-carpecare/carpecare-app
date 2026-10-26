@@ -2,6 +2,20 @@ export function formatName(first?: string | null, last?: string | null) {
   return [first, last].filter(Boolean).join(" ") || "Unknown";
 }
 
+export function formatCareHomeKind(
+  kind: "family" | "domiciliary" | "residential" | null | undefined,
+) {
+  switch (kind) {
+    case "family":
+      return "Family";
+    case "domiciliary":
+      return "Domiciliary care";
+    case "residential":
+    default:
+      return "Residential home";
+  }
+}
+
 export function formatDuration(seconds: number | null | undefined) {
   if (seconds == null) return "—";
   const rounded = Math.round(seconds);

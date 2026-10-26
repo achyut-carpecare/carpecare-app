@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Building2, Users, Activity, Video } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { db } from "@/features/database";
 import { requireOrganisationAdmin } from "@/features/auth/guards";
 import { getAuthUserEmailsByIds } from "@/features/auth/admin";
@@ -14,6 +15,7 @@ import {
 } from "@/features/database/queries";
 import { PageHeader } from "@/features/dashboard/components/page-header";
 import { AccessDenied } from "@/features/dashboard/components/access-denied";
+import { formatCareHomeKind } from "@/features/dashboard/lib/format";
 import { AddCareHomeToOrgDialog } from "./components/add-care-home-to-org-dialog";
 import { RenameOrganisationDialog } from "./components/rename-organisation-dialog";
 import { AddOrgMemberDialog } from "./components/add-org-member-dialog";
@@ -161,8 +163,11 @@ export default async function OrganisationPage({
                   className="flex items-center justify-between rounded-xl border p-4 hover:border-primary/30 transition-colors"
                 >
                   <div>
-                    <div className="font-medium">
+                    <div className="font-medium flex items-center gap-2">
                       {home.name ?? "Unnamed establishment"}
+                      <Badge variant="outline">
+                        {formatCareHomeKind(home.kind)}
+                      </Badge>
                     </div>
                     <div className="text-sm text-muted-foreground">
                       {home.patientCount} residents · {home.memberCount} staff ·{" "}

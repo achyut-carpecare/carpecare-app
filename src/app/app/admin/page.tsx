@@ -8,12 +8,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireSystemAdmin } from "@/features/auth/guards";
 import { db } from "@/features/database";
 import { PageHeader } from "@/features/dashboard/components/page-header";
 import { AccessDenied } from "@/features/dashboard/components/access-denied";
 import { getCareHomeCounts, getCareHomes } from "@/features/database/queries";
+import { formatCareHomeKind } from "@/features/dashboard/lib/format";
 import { AddCareHomeDialog } from "./components/add-care-home-dialog";
 import { EditCareHomeDialog } from "./components/edit-care-home-dialog";
 import { DeleteCareHomeDialog } from "./components/delete-care-home-dialog";
@@ -85,6 +87,7 @@ export default async function AdminDashboardPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
+                <TableHead>Type</TableHead>
                 <TableHead className="text-right">Residents</TableHead>
                 <TableHead className="text-right">Members</TableHead>
                 <TableHead className="text-right">Events this month</TableHead>
@@ -101,6 +104,16 @@ export default async function AdminDashboardPage() {
                     >
                       {home.name ?? "Unnamed care home"}
                     </Link>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline">
+                      {formatCareHomeKind(home.kind)}
+                    </Badge>
+                    {home.organisationId && (
+                      <span className="ml-1.5 text-xs text-muted-foreground">
+                        in an org
+                      </span>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
                     {home.patientCount}

@@ -15,8 +15,17 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { createCareHomeAction } from "@/app/app/admin/lib/actions";
 import { toast } from "@/components/ui/sonner";
+
+type Kind = "domiciliary" | "residential";
 
 interface AddCareHomeToOrgDialogProps {
   organisationId: string;
@@ -28,13 +37,14 @@ export function AddCareHomeToOrgDialog({
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
+  const [kind, setKind] = useState<Kind>("residential");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setIsSubmitting(true);
 
-    const result = await createCareHomeAction({ name, organisationId });
+    const result = await createCareHomeAction({ name, organisationId, kind });
 
     setIsSubmitting(false);
 
@@ -45,6 +55,7 @@ export function AddCareHomeToOrgDialog({
 
     toast.success("Establishment created");
     setName("");
+    setKind("residential");
     setOpen(false);
     router.refresh();
   }
@@ -76,6 +87,18 @@ export function AddCareHomeToOrgDialog({
                 className="rounded-xl"
                 required
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="org-home-kind">Type</Label>
+              <Select value={kind} onValueChange={(v) => setKind(v as Kind)}>
+                <SelectTrigger id="org-home-kind" className="rounded-xl">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="residential">Residential home</SelectItem>
+                  <SelectItem value="domiciliary">Domiciliary care</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
           <DialogFooter>

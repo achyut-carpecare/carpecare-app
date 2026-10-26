@@ -34,6 +34,7 @@ import {
 } from "@/features/database/queries";
 import { firstDayOfMonth } from "@/features/database/lib/date";
 import {
+  formatCareHomeKind,
   formatDate,
   formatDuration,
   formatTime,
@@ -98,7 +99,7 @@ export default async function CareHomeDashboardPage({
     <div className="space-y-6">
       <PageHeader
         title={careHome.name ?? "Care home"}
-        subtitle="Welcome back. Here is what is happening."
+        subtitle={`${formatCareHomeKind(careHome.kind)} · Welcome back. Here is what is happening.`}
         actions={
           <>
             <Button asChild variant="secondary" className="rounded-xl">

@@ -60,6 +60,7 @@ export async function createOrganisationAction(data: { name: string }) {
 export async function createCareHomeAction(data: {
   name: string;
   organisationId?: string;
+  kind?: "family" | "domiciliary" | "residential";
 }) {
   try {
     const auth = await requireCareHomeCreator(data.organisationId);
@@ -75,6 +76,7 @@ export async function createCareHomeAction(data: {
     const careHome = await createCareHome(db, {
       name: trimmedName,
       ...(data.organisationId ? { organisationId: data.organisationId } : {}),
+      ...(data.kind ? { kind: data.kind } : {}),
     });
 
     revalidatePath("/app/admin");
@@ -90,7 +92,10 @@ export async function createCareHomeAction(data: {
   }
 }
 
-export async function updateCareHomeAction(id: string, data: { name: string }) {
+export async function updateCareHomeAction(
+  id: string,
+  data: { name: string; kind?: "family" | "domiciliary" | "residential" },
+) {
   try {
     const auth = await requireCareHomeOwner(id);
     if (auth.error) {
@@ -102,7 +107,10 @@ export async function updateCareHomeAction(id: string, data: { name: string }) {
       return { error: "Care home name is required" };
     }
 
-    const careHome = await updateCareHomeById(db, id, { name: trimmedName });
+    const careHome = await updateCareHomeById(db, id, {
+      name: trimmedName,
+      ...(data.kind ? { kind: data.kind } : {}),
+    });
 
     revalidatePath("/app/admin");
     revalidatePath("/app");
