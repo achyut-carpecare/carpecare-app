@@ -4,9 +4,11 @@ import { revalidatePath } from "next/cache";
 import { eq } from "drizzle-orm";
 import { db } from "@/features/database";
 import { schema } from "@/features/database";
-import { createClient } from "@/features/auth/server";
 import { getAuthUserEmailsByIds } from "@/features/auth/admin";
-import type { DBTables } from "@/features/database/types";
+import {
+  requireCareHomeAccountManager,
+  requireCareHomeAdmin,
+} from "@/features/auth/guards";
 import {
   getCareHomeById,
   getCareHomeInvitationById,
@@ -14,7 +16,6 @@ import {
   getCareHomeMembers,
   getPendingCareHomeInvitationByEmail,
   getUserProfileById,
-  getUserWithMemberships,
 } from "@/features/database/queries";
 import {
   generateToken,
@@ -32,51 +33,6 @@ function formatName(first?: string | null, last?: string | null) {
   return [first, last].filter(Boolean).join(" ") || "Someone";
 }
 
-type ManagerResult =
-  | { error: string; userId: string | null; profile: null }
-  | { error: null; userId: string; profile: DBTables["userProfiles"] };
-
-async function requireManager(careHomeId: string): Promise<ManagerResult> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return { error: "You must be signed in", userId: null, profile: null };
-  }
-
-  const result = await getUserWithMemberships(db, user.id);
-  if (!result) {
-    return { error: "You must be signed in", userId: null, profile: null };
-  }
-
-  const { profile, memberships } = result;
-
-  if (profile.isSystemAdmin) {
-    return { error: null, userId: user.id, profile };
-  }
-
-  const membership = memberships.find((m) => m.careHome.id === careHomeId);
-  if (!membership || membership.role !== "admin") {
-    console.warn(
-      "requireManager: user",
-      user.id,
-      "is not an admin of care home",
-      careHomeId,
-      "memberships:",
-      memberships.map((m) => ({ careHomeId: m.careHome.id, role: m.role })),
-    );
-    return {
-      error: "You do not have permission to manage this care home",
-      userId: user.id,
-      profile: null,
-    };
-  }
-
-  return { error: null, userId: user.id, profile };
-}
-
 export async function inviteMemberAction({
   careHomeId,
   email,
@@ -87,7 +43,7 @@ export async function inviteMemberAction({
   role: "admin" | "member";
 }) {
   try {
-    const auth = await requireManager(careHomeId);
+    const auth = await requireCareHomeAccountManager(careHomeId);
     if (auth.error) {
       return { error: auth.error };
     }
@@ -192,7 +148,7 @@ export async function resendInvitationAction(invitationId: string) {
       return { error: "This invitation is no longer pending" };
     }
 
-    const auth = await requireManager(invitation.careHomeId);
+    const auth = await requireCareHomeAccountManager(invitation.careHomeId);
     if (auth.error) {
       return { error: auth.error };
     }
@@ -245,7 +201,7 @@ export async function revokeInvitationAction(invitationId: string) {
       return { error: "Invitation not found" };
     }
 
-    const auth = await requireManager(invitation.careHomeId);
+    const auth = await requireCareHomeAccountManager(invitation.careHomeId);
     if (auth.error) {
       return { error: auth.error };
     }
@@ -280,7 +236,7 @@ export async function updateMemberRoleAction({
       return { error: "Member not found" };
     }
 
-    const auth = await requireManager(member.careHomeId);
+    const auth = await requireCareHomeAdmin(member.careHomeId);
     if (auth.error) {
       return { error: auth.error };
     }
@@ -318,7 +274,7 @@ export async function removeMemberAction(memberId: string) {
       return { error: "Member not found" };
     }
 
-    const auth = await requireManager(member.careHomeId);
+    const auth = await requireCareHomeAccountManager(member.careHomeId);
     if (auth.error) {
       return { error: auth.error };
     }

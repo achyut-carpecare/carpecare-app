@@ -3,12 +3,12 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { createClient } from "@/features/auth/server";
+import { requirePatientAccess } from "@/features/auth/guards";
 import { db } from "@/features/database";
 import {
   getCareHomeById,
   getPatientById,
   getSeizureRecordWithDetails,
-  getUserWithMemberships,
 } from "@/features/database/queries";
 import { PageHeader } from "@/features/dashboard/components/page-header";
 import { AccessDenied } from "@/features/dashboard/components/access-denied";
@@ -44,14 +44,8 @@ export default async function SeizureRecordPage({
     redirect("/auth/login");
   }
 
-  const userData = await getUserWithMemberships(db, authUser.id);
-  if (!userData) {
-    redirect("/auth/login");
-  }
-
-  const { profile, memberships } = userData;
-  const membership = memberships.find((m) => m.careHome.id === careHomeId);
-  if (!membership && !profile.isSystemAdmin) {
+  const auth = await requirePatientAccess(patientId);
+  if (auth.error) {
     return <AccessDenied />;
   }
 

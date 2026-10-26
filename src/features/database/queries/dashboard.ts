@@ -14,6 +14,7 @@ export async function getUserWithMemberships(db: DB, userId: string) {
     .select({
       careHome: schema.careHome,
       role: schema.careHomeMembers.role,
+      accessMode: schema.careHomeMembers.accessMode,
     })
     .from(schema.careHomeMembers)
     .innerJoin(

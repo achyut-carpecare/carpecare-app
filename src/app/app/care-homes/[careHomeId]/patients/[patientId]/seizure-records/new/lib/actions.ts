@@ -2,11 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { db } from "@/features/database";
-import {
-  createSeizureRecord,
-  getPatientById,
-} from "@/features/database/queries";
-import { requireCareHomeMember } from "@/features/auth/guards";
+import { createSeizureRecord } from "@/features/database/queries";
+import { requirePatientAccess } from "@/features/auth/guards";
 import { assertOwnsVideoFile } from "@/features/storage/actions";
 
 export async function createSeizureRecordAction({
@@ -35,12 +32,7 @@ export async function createSeizureRecordAction({
       return { error: "Seizure type is required" };
     }
 
-    const patient = await getPatientById(db, patientId);
-    if (!patient || !patient.careHomeId) {
-      return { error: "Resident not found" };
-    }
-
-    const auth = await requireCareHomeMember(patient.careHomeId);
+    const auth = await requirePatientAccess(patientId);
     if (auth.error || !auth.userId) {
       return {
         error:

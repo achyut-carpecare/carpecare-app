@@ -5,11 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { createClient } from "@/features/auth/server";
+import { requirePatientAccess } from "@/features/auth/guards";
 import { db } from "@/features/database";
 import {
   getCareHomeById,
   getPatientById,
-  getUserWithMemberships,
   getPatientTimeline,
   getPatientStats,
   getSeizureCalendarDays,
@@ -42,14 +42,8 @@ export default async function PatientDetailPage({
     redirect("/auth/login");
   }
 
-  const userData = await getUserWithMemberships(db, authUser.id);
-  if (!userData) {
-    redirect("/auth/login");
-  }
-
-  const { profile, memberships } = userData;
-  const membership = memberships.find((m) => m.careHome.id === careHomeId);
-  if (!membership && !profile.isSystemAdmin) {
+  const auth = await requirePatientAccess(patientId);
+  if (auth.error) {
     return <AccessDenied />;
   }
 

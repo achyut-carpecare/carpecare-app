@@ -31,6 +31,10 @@ export const careHomeKind = pgEnum("care_home_kind", [
   "domiciliary",
   "residential",
 ]);
+export const careHomeMemberAccessMode = pgEnum("care_home_member_access_mode", [
+  "home_wide",
+  "person_scoped",
+]);
 
 export const gooseDbVersion = pgTable("goose_db_version", {
   id: integer().primaryKey().generatedByDefaultAsIdentity({
@@ -88,6 +92,11 @@ export const careHomeMembers = pgTable(
     userId: uuid("user_id").notNull(),
     careHomeId: uuid("care_home_id").notNull(),
     role: careHomeRole().default("member").notNull(),
+    // "person_scoped" means this member only sees patients they hold an
+    // explicit patient_access_grants row for, instead of every patient at
+    // the care home. Defaults to home_wide so every existing membership
+    // keeps today's behavior unchanged.
+    accessMode: careHomeMemberAccessMode().default("home_wide").notNull(),
     createdAt: timestamp("created_at", { mode: "string" })
       .defaultNow()
       .notNull(),

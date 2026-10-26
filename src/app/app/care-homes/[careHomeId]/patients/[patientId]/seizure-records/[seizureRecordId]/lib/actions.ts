@@ -11,10 +11,7 @@ import {
 } from "@/features/database/queries";
 import { generateToken, hashToken, sendShareLinkEmail } from "@/features/email";
 import { formatDateTime, formatName } from "@/features/dashboard/lib/format";
-import {
-  requireCareHomeAdmin,
-  requireCareHomeMember,
-} from "@/features/auth/guards";
+import { requirePatientAccess } from "@/features/auth/guards";
 import {
   assertOwnsVideoFile,
   deleteVideoFile,
@@ -49,7 +46,7 @@ export async function createSeizureRecordShareAction({
       return { error: "Seizure record is missing patient or care home data" };
     }
 
-    const auth = await requireCareHomeMember(careHome.id);
+    const auth = await requirePatientAccess(patient.id);
     if (auth.error) {
       return { error: auth.error };
     }
@@ -110,7 +107,7 @@ export async function deleteSeizureRecordAction({
   seizureRecordId: string;
 }) {
   try {
-    const auth = await requireCareHomeAdmin(careHomeId);
+    const auth = await requirePatientAccess(patientId);
     if (auth.error) {
       return { error: auth.error };
     }
@@ -160,7 +157,7 @@ export async function updateSeizureRecordAction({
   videoId?: string;
 }) {
   try {
-    const auth = await requireCareHomeAdmin(careHomeId);
+    const auth = await requirePatientAccess(patientId);
     if (auth.error || !auth.userId) {
       return {
         error: auth.error ?? "You do not have permission to edit this record",
