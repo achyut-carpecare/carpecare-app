@@ -6,12 +6,19 @@ import {
   createSeizureRecordShare,
   deleteSeizureRecordById,
   deleteSeizureRecordShareById,
+  getCareHomeMembersWithProfiles,
   getSeizureRecordWithDetails,
   updateSeizureRecordById,
 } from "@/features/database/queries";
-import { generateToken, hashToken, sendShareLinkEmail } from "@/features/email";
+import {
+  generateToken,
+  hashToken,
+  sendShareLinkEmail,
+  sendShareNotificationEmail,
+} from "@/features/email";
 import { formatDateTime, formatName } from "@/features/dashboard/lib/format";
 import { requirePatientAccess } from "@/features/auth/guards";
+import { getAuthUserEmailsByIds } from "@/features/auth/admin";
 import {
   assertOwnsVideoFile,
   deleteVideoFile,
@@ -47,9 +54,14 @@ export async function createSeizureRecordShareAction({
     }
 
     const auth = await requirePatientAccess(patient.id);
-    if (auth.error) {
+    if (auth.error || !auth.profile) {
       return { error: auth.error };
     }
+
+    const membership = auth.memberships.find(
+      (m) => m.careHome.id === careHome.id,
+    );
+    const isStaffShare = membership?.role === "member";
 
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + expiresInDays);
@@ -86,6 +98,47 @@ export async function createSeizureRecordShareAction({
       console.error("Failed to send share link email:", emailError);
       await deleteSeizureRecordShareById(db, share.id);
       return { error: "Failed to send the share email. Please try again." };
+    }
+
+    if (isStaffShare) {
+      // Best-effort: staff can still share immediately, no approval
+      // bottleneck - admins just get a heads-up. Never block or fail the
+      // share itself if this doesn't go out.
+      try {
+        const membersWithProfiles = await getCareHomeMembersWithProfiles(
+          db,
+          careHome.id,
+        );
+        const admins = membersWithProfiles.filter(
+          (m) => m.member.role === "admin",
+        );
+        const adminEmailById = await getAuthUserEmailsByIds(
+          admins.map((a) => a.profile.id),
+        );
+        const recordUrl = `${appUrl}/app/care-homes/${careHome.id}/patients/${patient.id}/seizure-records/${seizureRecordId}`;
+
+        await Promise.all(
+          admins.map((admin) => {
+            const adminEmail = adminEmailById.get(admin.profile.id);
+            if (!adminEmail) return Promise.resolve();
+            return sendShareNotificationEmail({
+              to: adminEmail,
+              careHomeName: careHome.name ?? "Carpe Care",
+              staffName: formatName(
+                auth.profile!.firstName,
+                auth.profile!.lastName,
+              ),
+              patientName: formatName(patient.firstName, patient.lastName),
+              recipientEmail: trimmedEmail,
+              expiresAt: formatDateTime(share.expiresAt),
+              recordId: seizureRecordId,
+              recordUrl,
+            });
+          }),
+        );
+      } catch (notifyError) {
+        console.error("Failed to notify admins of staff share:", notifyError);
+      }
     }
 
     revalidatePath(`/app/care-homes/${careHome.id}/patients/${patient.id}`);

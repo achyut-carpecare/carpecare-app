@@ -1,6 +1,7 @@
 import { render } from "@react-email/components";
 import { resend, DEFAULT_FROM } from "./transporter";
 import { ShareLinkEmail } from "./templates/share-link";
+import { ShareNotificationEmail } from "./templates/share-notification";
 import { ShareOtpEmail } from "./templates/share-otp";
 import { InvitationEmail } from "./templates/invite-link";
 import { PlatformInviteEmail } from "./templates/platform-invite";
@@ -68,6 +69,47 @@ export async function sendShareLinkEmail({
   });
 
   console.log("Share link email sent:", data?.id, "to:", to);
+  return data;
+}
+
+export async function sendShareNotificationEmail({
+  to,
+  careHomeName,
+  staffName,
+  patientName,
+  recipientEmail,
+  expiresAt,
+  recordId,
+  recordUrl,
+}: {
+  to: string;
+  careHomeName: string;
+  staffName: string;
+  patientName: string;
+  recipientEmail: string;
+  expiresAt: string;
+  recordId: string;
+  recordUrl: string;
+}) {
+  const html = await render(
+    ShareNotificationEmail({
+      careHomeName,
+      staffName,
+      patientName,
+      recipientEmail,
+      expiresAt,
+      recordId,
+      recordUrl,
+    }),
+  );
+
+  const data = await sendEmail({
+    to,
+    subject: `${staffName} shared a record at ${careHomeName}`,
+    html,
+  });
+
+  console.log("Share notification email sent:", data?.id, "to:", to);
   return data;
 }
 
